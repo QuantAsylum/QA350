@@ -1,0 +1,88 @@
+# Version 28-May-2014
+
+#
+# Visual Studio
+#
+*.[Oo]bj
+*.[Ee]xe
+*.zip
+*.dll
+*.pdb
+*.pch
+*.[Cc]ache
+*.tlog
+[Oo]bj/
+[Bb]in/
+[Dd]ebug*/
+[Rr]elease*/
+[Bb]oneyard/
+*.suo
+*.config
+*.nupkg
+*.xml
+*.congif
+
+#
+# 8051 assembler
+#
+*.map
+*.lst
+*.sym
+*.mem
+*.rst
+
+#
+# Xilinx
+#
+*.ngm
+*.xmsgs
+*.html
+*.xreport
+# Translate output files
+*.bld
+*.ngd
+# Map output files
+*.ncd
+*.pcf
+*.ngm
+*.mrp
+*.grf
+*.psr
+# P&R
+*.bgn
+*.bin
+*.bit
+# other
+*.wdb
+*.ncd
+*.twx
+*.xrpt
+*.ngc
+*.ngr
+*.pad
+*.ptwx
+*.twr
+*.unroutes
+*.xpi
+*.log
+*.xde
+*.debug
+
+#
+# Code composer
+#
+*.prefs
+*.properties
+*.mark
+*.snap
+*.resources
+*.index
+*.xmi
+*.ini
+*.ccsproject
+*.cproject
+*.launch
+*.project
+
+
+

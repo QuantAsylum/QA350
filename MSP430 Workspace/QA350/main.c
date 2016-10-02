@@ -49,28 +49,16 @@
 
 #include "driverlib.h"
 
-//#include "msp430.h"
-//#include "msp430f5529.h"
-//#include "msp430f5xx_6xxgeneric.h"
-//#include "msp430xgeneric.h"
-
-
-
 #include "USB_config/descriptors.h"
 #include "USB_API/USB_Common/device.h"
 #include "USB_API/USB_Common/usb.h"                 // USB-specific functions
 #include "USB_API/USB_HID_API/UsbHid.h"
 #include "USB_app/usbConstructs.h"
 
-//typedef unsigned short      UINT16;
-//typedef unsigned long       UINT32;
-
-
-
-/*
- * NOTE: Modify hal.h to select a specific evaluation board and customize for
- * your own board.
- */
+//
+// NOTE: Modify hal.h to select a specific evaluation board and customize for
+// your own board.
+//
 #include "hal.h"
 
 #define UART 		USCI_A1_BASE
@@ -131,22 +119,16 @@ void InitClocks()
 
     // Good link on setting MSP430F5529 clocks here: http://mostlyanalog.blogspot.com/2015/04/clocking-msp430f5529-launchpad.html
 
-    // Indicate we have an external xtal resonator
-    //UCS_setExternalClockSource(0, 4000000);
-
     // XT2 IO pins to drive the xtal
 	GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P5, GPIO_PIN2);
 	GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P5, GPIO_PIN3);
 
 	// Turn on xtal drive
-	//UCS_turnOnXT2(UCS_XT2_DRIVE_4MHZ_8MHZ);
 	UCS_XT2Start(UCS_XT2DRIVE_4MHZ_8MHZ);
 
 	// XT1 defaults to 32KHz, and we're using 4 MHz resonator for XT2. Note, though
 	// we don't have an xtal in place for 32 KHz
 	UCS_setExternalClockSource(32768, 4000000);
-
-
 
 	// Into FLL with 1 MHz reference
 	UCS_clockSignalInit(UCS_FLLREF, UCS_XT2CLK_SELECT, UCS_CLOCK_DIVIDER_4 );
@@ -155,10 +137,6 @@ void InitClocks()
 	UCS_initFLLSettle(24000, 24);
 
 	// Set all system clocks to run at the DCO frequency of 24 MHz
-	//UCS_initClockSignal(UCS_ACLK, UCS_DCOCLK_SELECT, UCS_CLOCK_DIVIDER_1 );
-	//UCS_initClockSignal(UCS_MCLK, UCS_DCOCLK_SELECT, UCS_CLOCK_DIVIDER_1 );
-	//UCS_initClockSignal(UCS_SMCLK, UCS_DCOCLK_SELECT, UCS_CLOCK_DIVIDER_1 );
-
 	UCS_clockSignalInit(UCS_ACLK, UCS_DCOCLK_SELECT, UCS_CLOCK_DIVIDER_1 );
 	UCS_clockSignalInit(UCS_MCLK, UCS_DCOCLK_SELECT, UCS_CLOCK_DIVIDER_1 );
 	UCS_clockSignalInit(UCS_SMCLK, UCS_DCOCLK_SELECT, UCS_CLOCK_DIVIDER_1 );
@@ -166,13 +144,12 @@ void InitClocks()
 
 
 // ADS1256 Primitives
-#define IS_DATAREADY (~P5IN & 0x80)
-#define ASSERT_SYNC  (P5OUT = P5IN & ~0x40)
-#define DEASSERT_SYNC (P5OUT = P5IN | 0x40)
-#define ASSERT_CS    (P4OUT = P4IN & ~0x40)
-//#define DEASSERT_CS  (P4OUT = P4IN | 0x40)
-#define DEASSERT_CS  (P4OUT = P4IN & ~0x40)
-#define ASSERT_RESET (P4OUT = P4IN & ~0x80)
+#define IS_DATAREADY   (~P5IN & 0x80)
+#define ASSERT_SYNC    (P5OUT = P5IN & ~0x40)
+#define DEASSERT_SYNC  (P5OUT = P5IN | 0x40)
+#define ASSERT_CS      (P4OUT = P4IN & ~0x40)
+#define DEASSERT_CS    (P4OUT = P4IN & ~0x40)
+#define ASSERT_RESET   (P4OUT = P4IN & ~0x80)
 #define DEASSERT_RESET (P4OUT = P4IN | 0x80)
 
 void InitGPIO()
@@ -183,11 +160,6 @@ void InitGPIO()
 
 	// Set P1.0 as ACLK output
 	GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P1, GPIO_PIN0);
-
-
-	// SPI DOUT
-	//GPIO_setAsOutputPin(GPIO_PORT_P4, GPIO_PIN4);
-	//GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P4, GPIO_PIN4);
 
 	// ADS1256 DRDY Input pin. When low, it indicates that data is ready
 	GPIO_setAsInputPin(GPIO_PORT_P5, GPIO_PIN7);
@@ -212,12 +184,12 @@ void InitGPIO()
 	// ADS1256 CLOCK
 	GPIO_setAsOutputPin(GPIO_PORT_P4, GPIO_PIN0);
 	GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P4, GPIO_PIN0);	// Controlled by SPI HW
-
-
 }
 
 
-
+//
+// Init TimerA to generate an interrupt at 1 KHz
+//
 void InitTimerA()
 {
     // Setup Timer A to generate an interrupt at 1 KHz
@@ -232,6 +204,9 @@ void InitTimerA()
     Timer_A_initUpMode(TIMER, &tp);
 }
 
+//
+// SPI communication with ADS ADC. We'll run at 1 MHz
+//
 void InitSPI()
 {
 	USCI_A_SPI_initMasterParam param;
@@ -246,18 +221,9 @@ void InitSPI()
 	USCI_A_SPI_enable(SPI);
 }
 
-/*
-void SetCSLow()
-{
-	P4OUT &= ~GPIO_PIN6;
-}
-
-void SetCSHigh()
-{
-	P4OUT |= GPIO_PIN6;
-}
-*/
-
+//
+// Send a 32-bit word via SPI
+//
 uint32_t SendSPI(uint32_t data)
 {
 	uint32_t r = 0;
@@ -290,6 +256,9 @@ uint32_t SendSPI(uint32_t data)
 // Data should be latched on falling edge of SCLK
 //
 
+//
+// Write to ADS register
+//
 void WriteADS1256Reg(uint8_t reg, uint8_t val)
 {
 	reg &= 0x0F;  // Mask register
@@ -314,6 +283,9 @@ void WriteADS1256Reg(uint8_t reg, uint8_t val)
 	DelayUS(10);
 }
 
+//
+// Read from ADS register
+//
 uint8_t ReadADS1256Reg(uint8_t reg)
 {
 	reg &= 0x0F;  // Mask register
@@ -342,6 +314,10 @@ uint8_t ReadADS1256Reg(uint8_t reg)
 	return USCI_A_SPI_receiveData(SPI);
 }
 
+//
+// Read data from ADS. This will block until the part is ready. If the part never
+// becomes ready, then this will hang
+//
 uint32_t ReadADS1256Data()
 {
 	uint32_t data = 0;
@@ -371,21 +347,22 @@ uint32_t ReadADS1256Data()
 	while (USCI_A_SPI_isBusy(SPI));
 	data = (data << 8) + USCI_A_SPI_receiveData(SPI);
 
-	//DelayUS(2);
-
 	DEASSERT_CS;
-
-	//DelayUS(10);
 
 	return data;
 }
 
+//
+// Spins until ADS is ready
+//
 void WaitUntilDataReady()
 {
 	while (IS_DATAREADY == 0)
 		;
 }
 
+//
+// Set ADS PGA Level
 void SetADS1256PGA(int pga)
 {
 	pga &= 0x7;
@@ -419,14 +396,6 @@ void InitADS1256()
 {
     volatile uint8_t a, b, c, d, e;
 
-    /*
-	DEASSERT_CS;
-	DEASSERT_SYNC;
-
-	DEASSERT_RESET;
-	DelayUS(10);
-	ASSERT_RESET;
-	DelayUS(10);*/
 	DEASSERT_RESET;
 	DEASSERT_SYNC;
 	Delay(1);
@@ -445,11 +414,6 @@ void InitADS1256()
 	//WriteADS1256Reg(3, 0x23);   // Set to 10SPS
 	//WriteADS1256Reg(3, 0x82);   // Set to 100SPS
 	WaitUntilDataReady();
-
-	//a = ReadADS1256Reg(3);
-	//WriteADS1256Reg(3, 0x3);  // Set to 2.5 SPS
-	//a = ReadADS1256Reg(3);
-
 }
 
 /*  
@@ -469,27 +433,12 @@ void main (void)
 
     //initPorts();           // Config GPIOS for low-power (output low)
     InitGPIO();
-    //initClocks(8000000);   // Config clocks. MCLK=SMCLK=FLL=8MHz; ACLK=REFO=32kHz
     InitClocks();
 
     InitSPI();
     InitTimerA();
-    //while (1)
-    //	SendSPI(0xCAFE);
 
     InitADS1256();
-
-    /*
-    volatile uint32_t adc;
-    while (1)
-    {
-    	uint8_t a, b, c;
-    	adc = ReadADS1256Data();
-    	//DEASSERT_SYNC;
-
-    	Delay(100);
-
-    }*/
 
     USB_setup(TRUE, TRUE); // Init USB & events; if a host is present, connect
 
@@ -534,6 +483,45 @@ void main (void)
                     bDataReceiveCompleted_event = FALSE;
                     
                     // Here, data was received. Verify the byte is the command to start conversion
+                    switch (buffer[0])
+                    {
+						case 0:
+							// This is a kick command. Light the LED for another 1000 mS
+							LEDConnected = 1000;
+							break;
+
+						case 1:
+							// Read ADC data command
+							LEDCommand = 100;
+							uint32_t data;
+							data = ReadADS1256Data();
+
+							//if (hidSendDataInBackground((uint8_t*)data, 4, HID0_INTFNUM,0))
+							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
+							{
+								// Operation may still be open; cancel it if the
+								// send fails, escape the main loop
+								USBHID_abortSend(&x,HID0_INTFNUM);
+								break;
+							}
+							else
+							{
+								// Send was successful
+
+							}
+							break;
+
+						case 2:
+							// Set PGA
+							SetADS1256PGA(buffer[1]);
+							break;
+
+						case 3:
+							// Set attentuator
+							SetADS1256Atten(buffer[1]);
+							break;
+                    }
+                    /*
                     if (buffer[0] == 00)
                     {
                     	// This is a kick command
@@ -571,30 +559,6 @@ void main (void)
                     	// Set Atten
                     	SetADS1256Atten(buffer[1]);
                     }
-                    /*
-                    else if (buffer[0] == 0xAA)
-                    {
-                    	// Read ADC command
-                    	LEDCommand = 100;
-
-                    	uint16_t  adcResult = ADC12_A_getResults(ADC, 0);
-
-                    	ADCData[0] = adcResult;
-
-                       // It is, so send a response
-                    	if (hidSendDataInBackground((uint8_t*)ADCData, ADCWORDS * 2, HID0_INTFNUM,0))
-						{
-							// Operation may still be open; cancel it if the
-							// send fails, escape the main loop
-							USBHID_abortSend(&x,HID0_INTFNUM);
-							break;
-						}
-                    	else
-                    	{
-                    	    // Send was successful
-
-                    	}
-                    }
                     */
                 }
                 break;
@@ -622,7 +586,9 @@ void main (void)
     }  //while(1)
 } //main()
 
-
+//
+// ISR Code
+//
 
 
 #pragma vector=TIMER0_A0_VECTOR
@@ -630,7 +596,7 @@ __interrupt void Timer0_A0 (void)
 {
 	++SysTicks;
 
-	// Indicate link is present. Top LED is BIT3
+	// Indicate link is present. Top LED of hardware is BIT3
 	if (LEDConnected > 0)
 	{
 		--LEDConnected;
@@ -652,7 +618,9 @@ __interrupt void Timer0_A0 (void)
 		P1OUT &= ~BIT2;
 	}
 
-	// Stable LED Indicates power has been applied for > 10 minutes. Bottom LED is BIT1
+	// Stable LED Indicates power has been applied for > 10 minutes. Bottom LED is BIT1.
+	// BUGBUG 2^32 mS = 1100 hours. This means the Stable LED will go off after 1100 hours
+	// of being on
 	if (SysTicks > 600000L)
 	{
 		P1OUT |= BIT1;
@@ -661,17 +629,6 @@ __interrupt void Timer0_A0 (void)
 	{
 		P1OUT &= ~ BIT1;
 	}
-
-	/*
-	// Every 100 mS, tell the main thread to run
-	if (MainThreadRun-- == 0)
-	{
-		// If we reload with 1, then we run at half tick rate. If we reload with 5, then we run at tick rate /6. So, load with 1
-		// less than you expect. That is, to get a div rate of 10, reload with 9
-		MainThreadRun = 99; // Was 99
-		RunMain = true;
-	}
-	*/
 }
 
 

@@ -22,6 +22,7 @@ namespace QA350
     {
         Form This;
 
+
         static internal Hardware HW;
 
         CalibrationClass CalData;
@@ -201,7 +202,6 @@ namespace QA350
             zedGraphControl2.GraphPane.BarSettings.MinBarGap = 0;
             zedGraphControl2.GraphPane.BarSettings.MinClusterGap = 0;
             zedGraphControl2.GraphPane.Margin.All = 0;
-            //zedGraphControl1.GraphPane.BarSettings.
         }
 
        
@@ -589,14 +589,14 @@ namespace QA350
             ResetStats();
         }
 
-        private void lightedButton24_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
-        {
-            if (lightedButton21.On)
-                AcqTimer.Enabled = true;
-            else
-                AcqTimer.Enabled = false;
+        //private void lightedButton24_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
+        //{
+        //    if (lightedButton21.On)
+        //        AcqTimer.Enabled = true;
+        //    else
+        //        AcqTimer.Enabled = false;
 
-        }
+        //}
 
         /// <summary>
         /// Adjust gain range

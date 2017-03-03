@@ -416,6 +416,31 @@ void InitADS1256()
 	WaitUntilDataReady();
 }
 
+void SweepLED()
+{
+	volatile uint32_t i, j;
+	volatile uint32_t delayVal = 30000;
+
+	 // All LED off
+	P1OUT &= ~(BIT3 | BIT2 | BIT1);
+
+	// Sweep LEDs
+	for (i=0; i<10; i++)
+	{
+		P1OUT |= BIT3;
+		for (j=0; j<delayVal; j++);
+		P1OUT &= ~(BIT3 | BIT2 | BIT1);
+
+		P1OUT |= BIT2;
+		for (j=0; j<delayVal; j++);
+		P1OUT &= ~(BIT3 | BIT2 | BIT1);
+
+		P1OUT |= BIT1;
+		for (j=0; j<delayVal; j++);
+		P1OUT &= ~(BIT3 | BIT2 | BIT1);
+	}
+}
+
 /*  
  * ======== main ========
  */
@@ -427,15 +452,17 @@ void main (void)
 #ifndef  DRIVERLIB_LEGACY_MODE
     PMM_setVCore(PMM_CORE_LEVEL_2);
 #else
-
     PMM_setVCore(PMM_BASE, PMM_CORE_LEVEL_2);
 #endif
+
+    __disable_interrupt();
 
     //initPorts();           // Config GPIOS for low-power (output low)
     InitGPIO();
     InitClocks();
 
     InitSPI();
+    SweepLED();
     InitTimerA();
 
     InitADS1256();
@@ -496,7 +523,6 @@ void main (void)
 							uint32_t data;
 							data = ReadADS1256Data();
 
-							//if (hidSendDataInBackground((uint8_t*)data, 4, HID0_INTFNUM,0))
 							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
 							{
 								// Operation may still be open; cancel it if the
@@ -520,46 +546,58 @@ void main (void)
 							// Set attentuator
 							SetADS1256Atten(buffer[1]);
 							break;
-                    }
-                    /*
-                    if (buffer[0] == 00)
-                    {
-                    	// This is a kick command
-                    	LEDConnected = 1000;
-                    }
-                    else if (buffer[0] == 0x01)
-                    {
-                    	// Read ADC data command
-                    	LEDCommand = 100;
-                    	uint32_t data;
-                    	data = ReadADS1256Data();
 
-                    	//if (hidSendDataInBackground((uint8_t*)data, 4, HID0_INTFNUM,0))
-                    	if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
-						{
-							// Operation may still be open; cancel it if the
-							// send fails, escape the main loop
-							USBHID_abortSend(&x,HID0_INTFNUM);
+						case 253:
+							// Read serial number
+							uint32_t data;
+							data = 12345678;
+
+							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
+							{
+								// Operation may still be open; cancel it if the
+								// send fails, escape the main loop
+								USBHID_abortSend(&x,HID0_INTFNUM);
+								break;
+							}
+							else
+							{
+								// Send was successful
+
+							}
 							break;
-						}
-						else
-						{
-							// Send was successful
 
-						}
+						case 254:
+							// Read software version
+							uint32_t data;
+							data = 3;
 
+							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
+							{
+								// Operation may still be open; cancel it if the
+								// send fails, escape the main loop
+								USBHID_abortSend(&x,HID0_INTFNUM);
+								break;
+							}
+							else
+							{
+								// Send was successful
+
+							}
+							break;
+
+						case 255:
+							// Update MSP430 Firmware. See section 3.8.1 in http://www.ti.com/lit/ug/slau319l/slau319l.pdf
+							__disable_interrupt();
+							USBKEYPID = 0x9628;  		// Unlock USB configuration registers
+							USBCNF &= ~PUR_EN; 			// Set PUR pin to hi-Z, logically disconnect from host
+							USBPWRCTL &= ~VBOFFIE; 		// Disable VUSBoff interrupt
+							USBKEYPID = 0x9600; 		// Lock USB configuration register
+							___cycles(500000);
+							((void (*)())0x1000)(); 	// Call BSL
+
+							break;
                     }
-                    else if (buffer[0] == 0x02)
-                    {
-                    	// Set PGA
-                    	SetADS1256PGA(buffer[1]);
-                    }
-                    else if (buffer[0] == 0x03)
-                    {
-                    	// Set Atten
-                    	SetADS1256Atten(buffer[1]);
-                    }
-                    */
+
                 }
                 break;
 
@@ -677,7 +715,13 @@ void __attribute__ ((interrupt(UNMI_VECTOR))) UNMI_ISR (void)
     }
 }
 
-// Delays the specified number of milliseconds
+//
+// Utils
+//
+
+//
+// s the specified number of milliseconds
+//
 void Delay(uint16_t delayMS)
 {
 	uint32_t target = GetSysTime() + delayMS;

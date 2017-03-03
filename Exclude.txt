@@ -1,0 +1,4 @@
+.gitignore
+.suo
+.pdn
+.bat

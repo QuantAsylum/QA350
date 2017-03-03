@@ -7,10 +7,20 @@ using System.Threading.Tasks;
 
 namespace QA350
 {
+    /// <summary>
+    /// Class encapsulates hardware functionality of the QA350
+    /// </summary>
     class Hardware
     {
+        /// <summary>
+        /// Instance of the HID library
+        /// </summary>
         HidDevice Msp430;
 
+        /// <summary>
+        /// Attempt to open the USB connection to the QA350
+        /// </summary>
+        /// <returns></returns>
         public bool Open()
         {
             Msp430 = HidDevices.Enumerate(0x2047, 0x0301).FirstOrDefault();

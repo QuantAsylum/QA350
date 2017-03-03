@@ -51,7 +51,6 @@
             this.label10 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.lightedButton21 = new LightedButton2.LightedButton2();
             this.lightedButton210 = new LightedButton2.LightedButton2();
             this.lightedButton211 = new LightedButton2.LightedButton2();
             this.lightedButton28 = new LightedButton2.LightedButton2();
@@ -212,7 +211,6 @@
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.label9);
-            this.panel1.Controls.Add(this.lightedButton21);
             this.panel1.Controls.Add(this.label3);
             this.panel1.Controls.Add(this.lightedButton210);
             this.panel1.Controls.Add(this.lightedButton211);
@@ -235,14 +233,14 @@
             // 
             // label11
             // 
-            this.label11.AutoSize = true;
             this.label11.BackColor = System.Drawing.Color.Transparent;
             this.label11.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label11.Location = new System.Drawing.Point(619, 140);
+            this.label11.Location = new System.Drawing.Point(599, 145);
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(18, 20);
+            this.label11.Size = new System.Drawing.Size(80, 30);
             this.label11.TabIndex = 44;
             this.label11.Text = "1";
+            this.label11.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // label5
             // 
@@ -268,15 +266,15 @@
             // 
             // label10
             // 
-            this.label10.AutoSize = true;
             this.label10.BackColor = System.Drawing.Color.Transparent;
             this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label10.Location = new System.Drawing.Point(531, 140);
+            this.label10.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.label10.Location = new System.Drawing.Point(495, 145);
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(18, 20);
+            this.label10.Size = new System.Drawing.Size(80, 30);
             this.label10.TabIndex = 41;
             this.label10.Text = "1";
-            this.label10.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            this.label10.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // label2
             // 
@@ -301,29 +299,6 @@
             this.label1.Size = new System.Drawing.Size(144, 19);
             this.label1.TabIndex = 39;
             this.label1.Text = "Voltage versus Time";
-            // 
-            // lightedButton21
-            // 
-            this.lightedButton21.AllowAllOff = true;
-            this.lightedButton21.AllowFadeToOff = false;
-            this.lightedButton21.BackColor = System.Drawing.Color.Transparent;
-            this.lightedButton21.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
-            this.lightedButton21.FillColor = System.Drawing.Color.Transparent;
-            this.lightedButton21.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lightedButton21.GroupName = null;
-            this.lightedButton21.LineThick = 1F;
-            this.lightedButton21.Location = new System.Drawing.Point(725, 345);
-            this.lightedButton21.Name = "lightedButton21";
-            this.lightedButton21.OffColor = System.Drawing.Color.DarkGreen;
-            this.lightedButton21.On = false;
-            this.lightedButton21.OnColor = System.Drawing.Color.LimeGreen;
-            this.lightedButton21.OneShot = true;
-            this.lightedButton21.OneShotInterval = 100;
-            this.lightedButton21.OptionMenuIndicator = false;
-            this.lightedButton21.Size = new System.Drawing.Size(50, 30);
-            this.lightedButton21.TabIndex = 38;
-            this.lightedButton21.TextWhenOff = "Edit";
-            this.lightedButton21.TextWhenOn = "Edit";
             // 
             // lightedButton210
             // 
@@ -522,7 +497,7 @@
             this.MinimizeBox = false;
             this.Name = "Form1";
             this.ShowIcon = false;
-            this.Text = "Form1";
+            this.Text = "QA350 DC Volt Meter";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.menuStrip1.ResumeLayout(false);
@@ -558,7 +533,6 @@
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
-        private LightedButton2.LightedButton2 lightedButton21;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem calibrateToolStripMenuItem;
         private System.Windows.Forms.Panel panel1;

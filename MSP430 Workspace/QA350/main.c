@@ -81,7 +81,7 @@ uint16_t x,y;
 uint8_t size;
 char c[2] = "";
 
-// USB buffer is 2 bytes. We make it 4 in case we grow it in the future
+// USB buffer is 4 bytes.
 #define bufferLen 4
 uint8_t buffer[bufferLen];
 
@@ -91,13 +91,13 @@ char outString[65];
 #define ADCWORDS 16
 int ADCData[ADCWORDS];
 
-// This is called at 1mS rate. This keeps track of the number of milliseconds elapsed since
+// This is updated at 1mS rate. This keeps track of the number of milliseconds elapsed since
 // system boot
 volatile uint32_t SysTicks;
 
 
-volatile uint16_t LEDConnected;  // Kicked by application at least once per second to keep LED lit
-volatile uint8_t LEDCommand;     // Toggled for 50 mS to indicate recieved command
+volatile uint16_t LEDConnected;  // Kicked by PC application at least once per second to keep LED lit
+volatile uint8_t LEDCommand;     // Toggled for 50 mS upon receipt of command from the PC
 
 volatile uint8_t MainThreadRun;
 
@@ -248,7 +248,7 @@ uint32_t SendSPI(uint32_t data)
 }
 
 // ADS1256 data notes:
-// Input clock is 7.68 MHz / 130 nS
+// Input clock is 7.68 MHz == 130 nS
 // Max sclock is 1.92 MHz
 // Issuing data read to clocking out data is 6.56 uS
 // Aim for 50 or 60 SPS. This is Fdata, and tau data is thus 20 mS
@@ -416,6 +416,9 @@ void InitADS1256()
 	WaitUntilDataReady();
 }
 
+//
+// Cycle through the LEDs to indicate to the user  we've turned on
+//
 void SweepLED()
 {
 	volatile uint32_t i, j;
@@ -505,6 +508,8 @@ void main (void)
                 // Wait in LPM0 until a receive operation has completed
                 __bis_SR_register(LPM0_bits + GIE);
 
+                uint32_t data;
+
                 if (bDataReceiveCompleted_event)
                 {
                     bDataReceiveCompleted_event = FALSE;
@@ -520,7 +525,6 @@ void main (void)
 						case 1:
 							// Read ADC data command
 							LEDCommand = 100;
-							uint32_t data;
 							data = ReadADS1256Data();
 
 							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
@@ -549,7 +553,6 @@ void main (void)
 
 						case 253:
 							// Read serial number
-							uint32_t data;
 							data = 12345678;
 
 							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
@@ -568,7 +571,6 @@ void main (void)
 
 						case 254:
 							// Read software version
-							uint32_t data;
 							data = 3;
 
 							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
@@ -592,7 +594,7 @@ void main (void)
 							USBCNF &= ~PUR_EN; 			// Set PUR pin to hi-Z, logically disconnect from host
 							USBPWRCTL &= ~VBOFFIE; 		// Disable VUSBoff interrupt
 							USBKEYPID = 0x9600; 		// Lock USB configuration register
-							___cycles(500000);
+							__delay_cycles(500000);
 							((void (*)())0x1000)(); 	// Call BSL
 
 							break;

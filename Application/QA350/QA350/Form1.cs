@@ -23,7 +23,7 @@ namespace QA350
         Form This;
 
 
-        static internal Hardware HW;
+        //static internal Hardware HW;
 
         CalibrationClass CalData;
 
@@ -64,19 +64,9 @@ namespace QA350
 
         private PrivateFontCollection fonts = new PrivateFontCollection();
 
-
-
         // LCD Font for display
         Font LCDFontBig;
         Font LCDFontSmall;
-
-        //class AttenSetting
-        //{
-        //    public double Atten;
-        //    public double GainAdj = 1.0;
-        //}
-        //List<AttenSetting> AttenList = new List<AttenSetting>();
-        //int AttenIndex = 0;
 
         /// <summary>
         /// Tracks history of readings. This is cleared automatically on gain range changes
@@ -87,7 +77,7 @@ namespace QA350
         {
             This = this;
             InitializeComponent();
-            HW = new Hardware();
+            //HW = new Hardware();
 
             if (File.Exists(Constants.SettingsFile))
             {
@@ -103,37 +93,19 @@ namespace QA350
                     File.Delete(Constants.SettingsFile);
                 }
             }
-
-            //AttenList.Add(new AttenSetting { Atten = 1.581 });
-            //AttenList.Add(new AttenSetting { Atten = 20.523 });
-            //AttenList.Add(new AttenSetting { Atten = 0.009129 });
-            //AttenList.Add(new AttenSetting { Atten = 0.00133 });
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            if (HW.Open())
-            {
-                toolStripStatusLabel1.Text = "Opened";
-                //tools   .Text = "Opened";
-                
-                SetLowRange();
+            TryConnect();
 
-                LineItem line = new LineItem("", GraphData, Color.LimeGreen, SymbolType.None);
-                zedGraphControl1.GraphPane.CurveList.Add(line);
-            }
-            else
-            {
-                toolStripStatusLabel1.Text = Text = "Open failed";
-            }
-
+            // If needed directories aren't present, create them
             if (Directory.Exists(Constants.DataFilePath) == false)
                 Directory.CreateDirectory(Constants.DataFilePath);
 
-            // Check if cal data exists
+            // Check if cal data exists and use it if it does
             if (File.Exists(Constants.CalibrationFile))
             {
-                //CalData = CalibrationClass.Deserialize(Constants.CalibrationFile);
                 CalData = (CalibrationClass)SerDes.Deserialize(typeof(CalibrationClass), File.ReadAllText(Constants.CalibrationFile));
             }
             else
@@ -142,6 +114,7 @@ namespace QA350
                 CalData = new CalibrationClass();
             }
 
+            // Check if the user has calibrated the device yet
             if (CalData.IsDefault)
             {
                 label4.Text = "UNCALIBRATED";
@@ -151,12 +124,50 @@ namespace QA350
                 label4.Text = "";
             }
 
-            byte[] fontData = QA350.Resource1.advanced_pixel_lcd_7;
+            LoadFontData();
+
+            InitGraphs();
+        }
+
+        /// <summary>
+        /// Called when the application is closing
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            try
+            {
+                File.WriteAllText(Constants.CalibrationFile, SerDes.Serialize(CalData));                
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("There was a problem writing the calibration data");
+            }
+
+            try
+            {
+                File.WriteAllText(Constants.SettingsFile, SerDes.Serialize(AppSettings));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("There was a problem writing the settings data");
+            }
+
+            Hardware.Close();
+        }
+
+        /// <summary>
+        /// Load the LCD font from resources
+        /// </summary>
+        private void LoadFontData()
+        {
+            byte[] fontData = QA350.Resource1.advanced_pixel_lcd_7asdf;
             IntPtr fontPtr = System.Runtime.InteropServices.Marshal.AllocCoTaskMem(fontData.Length);
             System.Runtime.InteropServices.Marshal.Copy(fontData, 0, fontPtr, fontData.Length);
             uint dummy = 0;
-            fonts.AddMemoryFont(fontPtr, QA350.Resource1.advanced_pixel_lcd_7.Length);
-            AddFontMemResourceEx(fontPtr, (uint)QA350.Resource1.advanced_pixel_lcd_7.Length, IntPtr.Zero, ref dummy);
+            fonts.AddMemoryFont(fontPtr, QA350.Resource1.advanced_pixel_lcd_7asdf.Length);
+            AddFontMemResourceEx(fontPtr, (uint)QA350.Resource1.advanced_pixel_lcd_7asdf.Length, IntPtr.Zero, ref dummy);
             System.Runtime.InteropServices.Marshal.FreeCoTaskMem(fontPtr);
             LCDFontBig = new Font(fonts.Families[0], 24.0F);
             LCDFontSmall = new Font(fonts.Families[0], 12);
@@ -165,7 +176,13 @@ namespace QA350
             label11.Font = LCDFontSmall;
             label7.Font = LCDFontSmall;
             label9.Font = LCDFontSmall;
+        }
 
+        /// <summary>
+        /// Initialize the graph we display
+        /// </summary>
+        private void InitGraphs()
+        {
             zedGraphControl1.GraphPane.Fill.Color = Color.Black;
             zedGraphControl1.GraphPane.Fill.Brush = new System.Drawing.SolidBrush(Color.Black);
             zedGraphControl1.GraphPane.Chart.Fill.Color = Color.Black;
@@ -204,180 +221,60 @@ namespace QA350
             zedGraphControl2.GraphPane.Margin.All = 0;
         }
 
-       
-
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        private void TryConnect()
         {
-            try
+            // Attempt to connect to the device upon app startup
+            if (Hardware.Open())
             {
-                //File.WriteAllText(Constants.CalibrationFile, CalData.Serialize());
-                File.WriteAllText(Constants.CalibrationFile, SerDes.Serialize(CalData));                
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("There was a problem writing the calibration data");
-            }
+                toolStripStatusLabel1.Text = "Opened";
+                SetLowRange();
 
-            try
-            {
-                File.WriteAllText(Constants.SettingsFile, SerDes.Serialize(AppSettings));
+                LineItem line = new LineItem("", GraphData, Color.LimeGreen, SymbolType.None);
+                zedGraphControl1.GraphPane.CurveList.Add(line);
+                AcqTimer.Enabled = true;
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show("There was a problem writing the settings data");
+                toolStripStatusLabel1.Text = "Open failed...please plug in QA350";
+                AcqTimer.Enabled = false;
             }
-
-            HW.Close();
         }
 
         private void SetLowRange()
         {
             IsLowRange = true;
-            HW.SetAtten(0);
+            Hardware.SetAtten(0);
             ResetStats();
         }
 
         private void SetHighRange()
         {
             IsLowRange = false;
-            HW.SetAtten(1);
+            Hardware.SetAtten(1);
             ResetStats();
         }
 
-        //void Msp430_Removed()
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //void Msp430_Inserted()
-        //{
-        //    Msp430.ReadReport(OnReport);
-        //}
-
-        //void OnReport(HidReport report)
-        //{
-        //    if (Msp430.IsConnected == false) { return; }
-
-        //    //var data = new USBData(report.Data);
-        //    //string text = System.Text.ASCIIEncoding.ASCII.GetString(data.Data);
-        //    //Debug.WriteLine(text);
-        //    //label1.Text = "Rec'd: " + text;
-
-        //    //Msp430.ReadReport(OnReport);
-        //}
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            //if ((Msp430 != null) && (Msp430.IsConnected))
-            //{
-            //    Stopwatch sw = Stopwatch.StartNew();
-
-            //    if (USBSendData(new byte[] { 0xAA }))
-            //    {
-            //        byte[] buffer;
-
-            //        if (USBRecvData(out buffer, 32))
-            //        {
-            //            Int32 data = (buffer[1] << 8) + buffer[0];
-            //            Debug.WriteLine("ReadVal:" + data.ToString());
-            //        }
-
-            //        sw.Stop();
-            //        Debug.WriteLine("Elapsed " + sw.ElapsedMilliseconds.ToString());
-            //        label1.Text = "Write OK";
-            //        return;
-            //    }
-            //}
-
-            //label1.Text = "Write failed";
-        }
-
-        //private void button3_Click(object sender, EventArgs e)
-        //{
-        //    //if ((Msp430 != null) && (Msp430.IsConnected))
-        //    //{
-        //    //    Stopwatch sw = Stopwatch.StartNew();
-
-        //    //    if (USBSendData(new byte[] { 0x01, 0x00 }))
-        //    //    {
-        //    //        byte[] buffer;
-
-        //    //        if (USBRecvData(out buffer, 32))
-        //    //        {
-        //    //            Int32 data = (buffer[2] << 16) + (buffer[1] << 8) + buffer[0];
-        //    //            Debug.WriteLine("ReadVal:" + data.ToString());
-        //    //        }
-
-        //    //        sw.Stop();
-        //    //        Debug.WriteLine("Elapsed " + sw.ElapsedMilliseconds.ToString());
-        //    //        label1.Text = "Write OK";
-        //    //        return;
-        //    //    }
-        //    //}
-
-        //    //label1.Text = "Write failed";
-        //}
-
-        //private void button2_Click(object sender, EventArgs e)
-        //{
-        //    //if ((Msp430 != null) && (Msp430.IsConnected))
-        //    //{
-        //    //    USBSendData(new byte[] { 0x00, 0x00 });
-        //    //}
-        //}
-
-        //private void SetPGA(int pga)
-        //{
-        //    //if ((Msp430 != null) && (Msp430.IsConnected))
-        //    //{
-        //    //    USBSendData(new byte[] { 0x02, (byte)pga });
-        //    //}
-        //}
-
-        //private void SetAtten(int atten)
-        //{
-        //    if ((Msp430 != null) && (Msp430.IsConnected))
-        //    {
-        //        USBSendData(new byte[] { 0x03, (byte)atten });
-        //    }
-        //}
-
-        // Set PGA = 1 command
-        //private void button4_Click(object sender, EventArgs e)
-        //{
-        //    // SetPGA(0);
-        //    //USBSendData(new byte[] { 0x00, 0x01 });
-        //}
-
-        //private void button5_Click(object sender, EventArgs e)
-        //{
-        //    //SetPGA(1);
-        //    //USBSendData(new byte[] { 0x00, 0x02 });
-        //}
-
-        // Set PGA = 7
-        //private void button6_Click(object sender, EventArgs e)
-        //{
-        //    //SetPGA(7);
-        //}
-
         /// <summary>
-        /// LED timer kick
+        /// LED timer kick. About every 500 mS, a 'ping' message is sent to the device to keep the 'LINK' LED
+        /// lit. If the device isn't connected, then an attempt to connect is re-tried
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
-            //if ((Msp430 != null) && (Msp430.IsConnected))
-            //{
-            //   USBSendData(new byte[] { 0x00, 0x00 });
-            //}
-            HW.KickLED();
+            if (Hardware.IsConnected)
+            {
+                Hardware.KickLED();
+            }
+            else
+            {
+                TryConnect();
+            }
         }
 
         /// <summary>
         /// Computes the unscaled voltage at the inputs pins. This does not take into 
-        /// account front end attenuators. This function merely computes the voltage given
+        /// account front-end attenuators. This function merely computes the voltage given
         /// the specified number of counts AND the internal reference
         /// </summary>
         /// <param name="counts"></param>
@@ -404,14 +301,26 @@ namespace QA350
             zedGraphControl2.Invalidate();
         }
 
-
-        Random r = new Random();
         int totalReads;
+        /// <summary>
+        /// This timer runs slightly slower than the sample rate
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void AckTimer_Tick(object sender, EventArgs e)
         {
             bool ovf = false;
+
+            // Check if we've been unplugged
+            if (Hardware.IsConnected == false)
+            {
+                AcqTimer.Enabled = false;
+                label3.Text = "--CONNECTING--";
+                return;
+            }
+
             // Read the raw counts
-            RawDataCounts = HW.ReadVoltageCounts();
+            RawDataCounts = Hardware.ReadVoltageCounts();
 
             // Convert counts to voltage.  
             double v;
@@ -437,9 +346,6 @@ namespace QA350
 
             label10.Text = Readings.Count.ToString();
             label11.Text = AppSettings.SampleHistory.ToString();
-
-            //Debug.WriteLine(string.Format("Counts: 0x{0} [{1}]   Calibrated Volts: {2}", RawDataCounts.ToString("X"), RawDataCounts.ToString(), v.ToEngineeringNotation()));
-
 
             string displayString = "";
 
@@ -495,92 +401,9 @@ namespace QA350
 
 
                 // Compute histogram
-
                 Histogram h = new Histogram(Readings, GetBinSize(), AppSettings.BinCount);
                 h.Plot(zedGraphControl2);
             }
-        }
-
-        // Set user offset
-        private void button7_Click(object sender, EventArgs e)
-        {
-            UserOffset = LastReading;
-        }
-
-        // Clear user offset
-        private void button8_Click(object sender, EventArgs e)
-        {
-            UserOffset = 0;
-            ResetStats();
-        }
-
-        // Calibrate 0
-        private void button15_Click(object sender, EventArgs e)
-        {
-            //double lastRaw;
-
-            if (IsLowRange)
-            {
-                //lastRaw = LastRawReading - Settings.LowRangeOffset;
-                CalData.LowRangeCountsOffset = RawDataCounts;
-            }
-            else
-            {
-                CalData.HiRangeCountsOffset = RawDataCounts;
-            }
-        }
-
-        // Cal to 2.048
-        private void button12_Click(object sender, EventArgs e)
-        {
-            if (IsLowRange)
-            {
-                CalData.LowRangeGain = 2.048 / LastReading * CalData.LowRangeGain;
-            }
-            else
-            {
-                CalData.HiRangeGain = 2.048 / LastReading * CalData.HiRangeGain;
-            }
-        }
-
-        // Cal to 2.5
-        private void button10_Click(object sender, EventArgs e)
-        {
-            //double lastraw = LastRawReading - ZeroVal;
-            ////double lastraw = LastRawReading;
-            //AttenList[AttenIndex].GainAdj = 2.5 / lastraw;
-        }
-
-        // Cal to 10V
-        private void button13_Click(object sender, EventArgs e)
-        {
-            if (IsLowRange)
-            {
-                CalData.LowRangeGain = 10 / LastReading * CalData.LowRangeGain;
-            }
-            else
-            {
-                CalData.HiRangeGain = 10 / LastReading * CalData.HiRangeGain;
-            }
-        }
-
-
-
-
-        //private void button9_Click(object sender, EventArgs e)
-        //{
-        //    GraphData.Clear();
-        //}
-
-        private void radioButton1_CheckedChanged(object sender, EventArgs e)
-        {
-            //if (radioButton1.Checked) { SetLowRange(); }
-            //else if (radioButton2.Checked) { SetHighRange(); }
-        }
-
-        private void button11_Click(object sender, EventArgs e)
-        {
-            label3.Font = LCDFontBig;
         }
 
         // Reset stats button
@@ -588,15 +411,6 @@ namespace QA350
         {
             ResetStats();
         }
-
-        //private void lightedButton24_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
-        //{
-        //    if (lightedButton21.On)
-        //        AcqTimer.Enabled = true;
-        //    else
-        //        AcqTimer.Enabled = false;
-
-        //}
 
         /// <summary>
         /// Adjust gain range
@@ -612,11 +426,7 @@ namespace QA350
 
         private void calibrateToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            //DlgCalibrate dlg = new DlgCalibrate();
-
-           // ack
             AcqTimer.Enabled = false;
-
 
             DlgCalibrate2 dlg = new DlgCalibrate2();
 
@@ -678,42 +488,17 @@ namespace QA350
             }
         }
 
-        //private void lightedButton21_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
-        //{
+        private void button1_Click(object sender, EventArgs e)
+        {
+            AcqTimer.Enabled = false;
+            LEDKickerTimer.Enabled = false;
+            Bootloader.EnterBootloader();
+        }
 
-        //}
-
-        //private void menuStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
-        //{
-
-        //}
-
-       
-
-
-
-
-
-
-        //private void radioButton2_CheckedChanged(object sender, EventArgs e)
-        //{
-
-        //}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (Hardware.IsConnected)
+                Hardware.USBSendData(new byte[] { 0xFF, 0x00 });
+        }
     }
 }

@@ -66,13 +66,13 @@ namespace QA350
 
             // Low gain. 
             Thread.Sleep(100);
-            Form1.HW.SetAtten(0);
+            Hardware.SetAtten(0);
             Thread.Sleep(1000);
 
             List<int> reads = new List<int>();
             for (int i=0; i<readCount; i++)
             {
-                int val  = Form1.HW.ReadVoltageCounts();
+                int val  = Hardware.ReadVoltageCounts();
                 reads.Add(val);
                 Debug.WriteLine("Read Low Gain Shorted Input Value of :" + val);
                 Thread.Sleep(500);
@@ -85,13 +85,13 @@ namespace QA350
             // High gain
             reads.Clear();
             Thread.Sleep(100);
-            Form1.HW.SetAtten(1);
+            Hardware.SetAtten(1);
             Thread.Sleep(1000);
 
             reads.Clear();
             for (int i = 0; i < readCount; i++)
             {
-                int val = Form1.HW.ReadVoltageCounts();
+                int val = Hardware.ReadVoltageCounts();
                 reads.Add(val);
                 Debug.WriteLine("Read High Gain Shorted Input Value of :" + val);
                 Thread.Sleep(500);
@@ -114,7 +114,7 @@ namespace QA350
 
             for (int i = 0; i < readCount; i++)
             {
-                int RawDataCounts = Form1.HW.ReadVoltageCounts();
+                int RawDataCounts = Hardware.ReadVoltageCounts();
 
                 // Convert counts to voltage.  
                 double v;
@@ -137,13 +137,13 @@ namespace QA350
 
             // We're connected to 2.5V reference. Take high span readings
             Thread.Sleep(100);
-            Form1.HW.SetAtten(1);
+            Hardware.SetAtten(1);
             Thread.Sleep(1000);
             double hiGainAvg = DoReadings(readCount, calData.HiRangeCountsOffset);
 
             // Take low-span readings
             Thread.Sleep(100);
-            Form1.HW.SetAtten(0);
+            Hardware.SetAtten(0);
             Thread.Sleep(1000);
             double loGainAv = DoReadings(readCount, calData.LowRangeCountsOffset);
 
@@ -202,7 +202,7 @@ namespace QA350
 
             // Hi Gain
             Thread.Sleep(100);
-            Form1.HW.SetAtten(1);
+            Hardware.SetAtten(1);
             Thread.Sleep(1000);
 
             // The ration of the HW divider has already been established. 

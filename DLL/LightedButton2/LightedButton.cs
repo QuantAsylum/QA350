@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 
+//
 // This is the source of this control:
 // http://www.codeproject.com/KB/miscctrl/transparent_controls.aspx?msg=2918915
 //
@@ -17,7 +18,6 @@ namespace LightedButton2
     [DefaultEvent("ButtonPressed")]  
     public partial class LightedButton2 : UserControl
     {
-        
         public class ButtonPressedArgs : EventArgs
         {
             public ButtonPressedArgs()
@@ -81,36 +81,8 @@ namespace LightedButton2
 
         public virtual void RemoteClick()
         {
-            //m_On = !m_On;
-            //Refresh();
-            //if (ButtonPressed != null)
-            //{
-            //    ButtonPressed(this, new ButtonPressedArgs());  // Notify Subscribers
-            //}
-
             LightedButton_Click(null, null);    
         }
-
-        //
-        // Properties
-        //
-
-        //
-        // This is a bit hacky, but the licensemanager stuff isn't working. This simply finds
-        // out if we're running in the devenv or not. If we're hosted in mono, this won't work
-        //
-        //public new bool DesignMode
-        //{
-        //    get
-        //    {
-        //        string s = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
-
-        //        if (s == "devenv" || s == "UserControlTestContainer")
-        //            return true;
-        //        else
-        //            return false;
-        //    }
-        //}
 
         [Description("Button state")]
         public bool On
@@ -167,7 +139,7 @@ namespace LightedButton2
                 }
         }
 
-        [Description("The color of an button when off")]
+        [Description("The color of a button when off")]
         public Color OffColor
         {
             get { return m_OffColor; }
@@ -227,19 +199,6 @@ namespace LightedButton2
             }
         }
 
-        
-        //public override bool Enabled
-        //{
-        //    get { return base.Enabled; }
-        //    set
-        //    {
-        //        base.Enabled = value;
-        //        Invalidate();
-        //    }
-        //}
-
-       
-
         /// <summary>
         /// Iterates through all parent controls of this type and group and returns the 
         /// name of the illuminated group. This allows the caller to determine which button
@@ -298,18 +257,9 @@ namespace LightedButton2
             }
         }
 
-       
-
-/*************************************/
-/*************************************/
-/*************************************/
-
         public LightedButton2()
         {
             InitializeComponent();
-
-            //BackgroundImageLayout = ImageLayout.None;
-            //DoubleBuffered = true;
 
             SetStyle(ControlStyles.SupportsTransparentBackColor, true);
             SetStyle(ControlStyles.ResizeRedraw, true);
@@ -319,7 +269,6 @@ namespace LightedButton2
                      ControlStyles.AllPaintingInWmPaint |
                      ControlStyles.UserPaint, true);
 
-            //Set the default backcolor
             this.BackColor = Color.Transparent;
 
             m_OnColor = Color.Blue;
@@ -333,16 +282,7 @@ namespace LightedButton2
                 ReloadAndResizeBitmaps();
                 Invalidate();
             }
-
-           // this.EnabledChanged += new EventHandler(LightedButton2_EnabledChanged);
-
-
         }
-
-        //void LightedButton2_EnabledChanged(object sender, EventArgs e)
-        //{
-        //    Invalidate();
-        //}
 
         // Handles all re-size requests.
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
@@ -354,7 +294,6 @@ namespace LightedButton2
             {
                 base.SetBoundsCore(x, y, width, height, specified);
 
-                //if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
                 if (DesignMode)
                 {
                     ReloadAndResizeBitmaps();
@@ -398,7 +337,7 @@ namespace LightedButton2
 
             return bmp;
 
-            // Faster code. SEe http://www.codeproject.com/KB/GDI-plus/csharpgraphicfilters11.aspx
+            // Faster code. See http://www.codeproject.com/KB/GDI-plus/csharpgraphicfilters11.aspx
             if (false)
             {
                 BitmapData bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
@@ -508,43 +447,25 @@ namespace LightedButton2
             if (m_OptionsMenu)
                 g.FillEllipse(brush1, bmp.Width / 2 - textSize.Width / 2 - 7, bmp.Height / 2 - textSize.Height / 2 + 10, 4, 4);
 
-            //Font smallFont = new Font(this.Font.FontFamily, 6);
-            //g.DrawString("CTRL", smallFont, Brushes.LightGray, bmp.Width / 2, bmp.Height * 0.9f, sf);
-
             Pen pen = new Pen(new SolidBrush(this.ForeColor), lineThick);
             pen.Alignment = PenAlignment.Center;
             SolidBrush brush = new SolidBrush(fillColor);
             SolidBrush bckgnd = new SolidBrush(this.BackColor);
 
-            // Creates a path to draw graphics
             GraphicsPath path = new GraphicsPath();
 
             // Paint the control
             if (this.BackColor == Color.Transparent)
             {
-                //path.AddRectangle(new RectangleF(0, 0, this.Width, this.Height));
                 path.AddRectangle(r);
 
-                // Creates the region area for the control painting
                 this.Region = new Region(path);
-
             }
             else
             {
-                //Add a rectangle to the path. This will be the control background.
                 path.AddRectangle(r);
-
-                //Creates a region area for the background painting
                 this.Region = new Region(path);
-
-                //Paint the control background
                 g.FillRegion(bckgnd, this.Region);
-
-                //Draw the shape over the control background
-                //g.FillEllipse(brush, 0.0f, 0.0f, cx, cy);
-
-                // Draw the shape outline
-                //g.DrawEllipse(pen, lineThick / 2.0f, lineThick / 2.0f, cx - lineThick, cy - lineThick);
             }
 
             pen.Dispose();
@@ -560,7 +481,6 @@ namespace LightedButton2
 
         private void TurnOffOthersInTheGroup()
         {
-
             Control parent = this.Parent;
 
             if (parent == null)
@@ -619,8 +539,6 @@ namespace LightedButton2
 
         private void LightedButton_Click(object sender, EventArgs e)
         {
-            // This is special for QA400. If the button is pressed and the control key is down, then we'll set the button 
-            // options
             if (ModifierKeys != Keys.Control)
             {
                 SetOnOffState(!m_On);
@@ -629,29 +547,12 @@ namespace LightedButton2
             }
             else
                 OnButtonOptions();
-
-            //int now = System.Environment.TickCount;
-
-            //if (now - previousClint < SystemInformation.DoubleClickTime)
-            //{
-            //    // Double click
-            //}
-            //else
-            //{
-            //    // Single click
-            //    OnButtonPressed();
-            //}
-
-            //previousClint = now;
-
-            //base.OnClick(e);
         }
 
         private void SetOnOffState(bool state)
         {
             if (state == m_On)
             {
-                // Already in this state. nothing to do
                 return;
             }
 
@@ -659,8 +560,6 @@ namespace LightedButton2
 
             if (m_On == true)
             {
-                // In here we just turned on. If there are others in this group, then
-                // we must turn them off
                 TurnOffOthersInTheGroup();
 
                 if (m_OneShot)
@@ -671,11 +570,6 @@ namespace LightedButton2
             }
             else
             {
-                // In here we just turned off
-
-                // The button that is turning on will ensure that everyone else is turned
-                // off. Thus, if we're on, then we can assume that everyon else is off. But this
-                // does mean that we need to make sure WE won't get turned off. 
                 if (m_AllowAllOff == false && IsEveryoneElseInTheGroupOff())
                     m_On = true;
                 else

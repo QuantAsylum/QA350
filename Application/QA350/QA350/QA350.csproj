@@ -125,7 +125,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Icon350.ico" />
-    <Content Include="License-LGPL.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\DLL\LightedButton2\LightedButton2.csproj">

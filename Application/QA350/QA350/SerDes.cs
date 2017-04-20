@@ -8,6 +8,9 @@ using System.Xml.Serialization;
 
 namespace QA350
 {
+    /// <summary>
+    /// Saves and retrieves app settings to an xml file
+    /// </summary>
     static class SerDes
     {
         static public string Serialize(object obj)

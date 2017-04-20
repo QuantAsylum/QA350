@@ -46,6 +46,12 @@ namespace QA350
             return false;
         }
 
+        /// <summary>
+        /// Opens a connection to the device for re-flashing. Prior to calling this
+        /// method, the MSP430 needs to have entered its bootlaoder. Note below
+        /// that the product ID differs when in bootloader mode
+        /// </summary>
+        /// <returns></returns>
         static public bool OpenBSL()
         {
             // See if we can see the USB ID of this product

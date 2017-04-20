@@ -10,47 +10,7 @@ using System.Windows.Forms;
 
 namespace QA350
 {
-    /*
-    static class Crc16
-    {
-        const ushort polynomial = 0xA001;
-        static readonly ushort[] table = new ushort[256];
-
-        public static ushort ComputeChecksum(byte[] bytes, int len)
-        {
-            ushort crc = 0;
-            for (int i = 0; i < len; ++i)
-            {
-                byte index = (byte)(crc ^ bytes[i]);
-                crc = (ushort)((crc >> 8) ^ table[index]);
-            }
-            return crc;
-        }
-
-        static Crc16()
-        {
-            ushort value;
-            ushort temp;
-            for (ushort i = 0; i < table.Length; ++i)
-            {
-                value = 0;
-                temp = i;
-                for (byte j = 0; j < 8; ++j)
-                {
-                    if (((value ^ temp) & 0x0001) != 0)
-                    {
-                        value = (ushort)((value >> 1) ^ polynomial);
-                    }
-                    else
-                    {
-                        value >>= 1;
-                    }
-                    temp >>= 1;
-                }
-                table[i] = value;
-            }
-        }
-    }*/
+    
 
     static class Bootloader
     {
@@ -69,18 +29,6 @@ namespace QA350
 
         static public void EnterBootloader()
         {
-            /*
-            // 1 + 51 bytes
-            byte[] data = new byte[1 + 51];
-
-            data[0] = 0x11;  // CMD = RX Password
-
-            for (int i=1; i<1+51; i++)
-            {
-                data[i] = 0xFF;
-            }
-            */
-
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.Filter = "Text Files|*.txt";
             ofd.Title = "Enter flash file";
@@ -113,7 +61,7 @@ namespace QA350
                 Thread.Sleep(4000);
                 Hardware.OpenBSL();
                 Thread.Sleep(1000);
-                Console.WriteLine("BSL Version: " + GetBSLVersion().ToString("X"));
+                Debug.WriteLine("BSL Version: " + GetBSLVersion().ToString("X"));
 
                 // Erase everything
                 MassErase();
@@ -179,7 +127,6 @@ namespace QA350
                 Debug.WriteLine("GetBSLVersion() failed");
                 return 0;
             }
-            
         }
 
         static void MassErase()
@@ -203,6 +150,15 @@ namespace QA350
 
         }
 
+        /// <summary>
+        /// Parses the specified ram-based bootloader file (provided by TI) and sends
+        /// it down to the MSP430, and then execute the ram-based file. This is needed
+        /// because the resident bootloader in the MSP430F5529 doesn't have all the 
+        /// functionality needed for a full-reflash.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="fastWrite"></param>
+        /// <returns></returns>
         static bool WriteFlash(string fileName, Boolean fastWrite)
         {
             byte[] lastArray = null;
@@ -243,7 +199,7 @@ namespace QA350
                 {
                     if (WriteBytesFast(address, data))
                     {
-                        //Console.WriteLine(string.Format("Fast Write Line: {0}  Address: 0x{1:X}", i, address));
+                        //Debug.WriteLine(string.Format("Fast Write Line: {0}  Address: 0x{1:X}", i, address));
                     }
                 }
                 else
@@ -253,7 +209,7 @@ namespace QA350
                     {
                         lastAddress = address;
                         lastArray = data;
-                        Console.WriteLine(string.Format("Reset vector found: 0x{0:X}", lastAddress));
+                        Debug.WriteLine(string.Format("Reset vector found: 0x{0:X}", lastAddress));
 
                         resetAddr = (data[0xFFFF - address] << 8) + (data[0xFFFE - address]);
                     }
@@ -261,11 +217,11 @@ namespace QA350
                     {
                         if (WriteBytes(address, data))
                         {
-                            Console.WriteLine(string.Format("Line: {0}  Address: 0x{1:X}  Len: {2}", i, address, data.Length));
+                            Debug.WriteLine(string.Format("Line: {0}  Address: 0x{1:X}  Len: {2}", i, address, data.Length));
                         }
                         else
                         {
-                            Console.WriteLine(string.Format("ERROR:    Line: {0}  Address: 0x{1:X}", i, address));
+                            Debug.WriteLine(string.Format("ERROR:    Line: {0}  Address: 0x{1:X}", i, address));
                         }
                     }
                 }
@@ -278,12 +234,12 @@ namespace QA350
             {
                 if (WriteBytes(lastAddress, lastArray))
                 {
-                    Console.WriteLine(string.Format("Reset vector written. Address: 0x{0:X}  Len: {1}", lastAddress, lastArray.Length));
+                    Debug.WriteLine(string.Format("Reset vector written. Address: 0x{0:X}  Len: {1}", lastAddress, lastArray.Length));
                     Thread.Sleep(100);
                     SetPC(resetAddr);
                 }
                 else
-                    Console.WriteLine("Failed to write reset vector");
+                    Debug.WriteLine("Failed to write reset vector");
             }
 
             return true;
@@ -361,7 +317,7 @@ namespace QA350
                 }
                 else
                 {
-                    Console.WriteLine(string.Format("Write failed. Message0 0x{0:x}  Message1 0x{1:x}", recvBuf[0], recvBuf[1]));
+                    Debug.WriteLine(string.Format("Write failed. Message0 0x{0:x}  Message1 0x{1:x}", recvBuf[0], recvBuf[1]));
                 }
 
 

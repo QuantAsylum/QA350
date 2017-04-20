@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace QA350
 {
+    /// <summary>
+    /// Class to hold vars we'd like to persist
+    /// </summary>
     public class Settings
     {
         // Y Axis Settings V versus T graph

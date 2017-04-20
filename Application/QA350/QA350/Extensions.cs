@@ -21,7 +21,6 @@ namespace QA350
 
         public static string ToEngineeringNotation(this double d, string formatString)
         {
-            //string formatString = "F3";
             double exponent = Math.Log10(Math.Abs(d));
             if (Math.Abs(d) >= 1)
             {

@@ -1,5 +1,10 @@
 # Version 28-May-2014
 
+*.bat
+*.pdn
+*.ico
+*.png
+
 #
 # Visual Studio
 #
@@ -16,6 +21,7 @@
 [Dd]ebug*/
 [Rr]elease*/
 [Bb]oneyard/
+art/
 *.suo
 *.config
 *.nupkg

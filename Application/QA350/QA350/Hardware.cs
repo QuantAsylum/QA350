@@ -23,7 +23,8 @@ namespace QA350
         static public bool IsConnected = false;
 
         /// <summary>
-        /// Attempt to open the USB connection to the QA350. If already 
+        /// Attempt to open the USB connection to the QA350. If already
+        /// opened, returns true
         /// </summary>
         /// <returns></returns>
         static public bool Open()

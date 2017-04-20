@@ -4,6 +4,7 @@
 *.pdn
 *.ico
 *.png
+Exclude.txt
 
 #
 # Visual Studio

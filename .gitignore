@@ -22,6 +22,7 @@ Exclude.txt
 [Dd]ebug*/
 [Rr]elease*/
 [Bb]oneyard/
+.metadata/
 art/
 *.suo
 *.config

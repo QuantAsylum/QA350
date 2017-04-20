@@ -11,7 +11,7 @@ namespace QA350
     /// <summary>
     /// Class encapsulates hardware functionality of the QA350
     /// </summary>
-    static class Hardware
+    static class Hardware  
     {
         /// <summary>
         /// Instance of the HID library

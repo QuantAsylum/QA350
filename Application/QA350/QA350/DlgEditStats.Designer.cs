@@ -406,7 +406,7 @@
             0,
             0});
             this.numericUpDown6.Minimum = new decimal(new int[] {
-            1,
+            100,
             0,
             0,
             0});
@@ -415,7 +415,7 @@
             this.numericUpDown6.TabIndex = 1;
             this.numericUpDown6.ThousandsSeparator = true;
             this.numericUpDown6.Value = new decimal(new int[] {
-            101,
+            100,
             0,
             0,
             0});

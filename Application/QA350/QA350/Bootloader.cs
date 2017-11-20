@@ -29,13 +29,37 @@ namespace QA350
 
         static public void EnterBootloader()
         {
+            const string bootstrapFile = "RAM_BSL.00.07.08.38.bsl";
+
             OpenFileDialog ofd = new OpenFileDialog();
-            ofd.Filter = "Text Files|*.txt";
+            ofd.Filter = "Boot Files|*.boot";
             ofd.Title = "Enter flash file";
             ofd.CheckFileExists = true;
+            ofd.FileName = "QA350.boot";
+            ofd.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 return;
+
+            // Make sure boottloader is valid
+            if (VerifyValidBootloader(ofd.FileName) == false)
+            {
+                MessageBox.Show("This doesn't appear to be a valid bootloader file. Reflash will be aborted.");
+                return;
+            }
+
+            // Make sure the bootloader boostrap exists
+            if (File.Exists(bootstrapFile) == false)
+            {
+                MessageBox.Show("The bootstrap file is missing. Reflash will be aborted.");
+                return;
+            }
+
+            if (VerifyValidBootstrap(bootstrapFile) == false)
+            {
+                MessageBox.Show("This doesn't appear to be a valid bootsrap file. Reflash will be aborted.");
+                return;
+            }
 
             // Tell the device to enter BSL if we're already connected
             if (Hardware.IsConnected && Hardware.USBSendData(new byte[] { 0xFF, 0x00 }))
@@ -43,8 +67,9 @@ namespace QA350
                 Thread.Sleep(4000);
             }
 
-
-            // Now reconnect with BL
+            // Now reconnect with BL. Do not enter this section of code if 
+            // everything you need isn't verified. Becuase failure inside here
+            // probably means a bricked device.
             try
             {
                 Hardware.OpenBSL();
@@ -53,8 +78,10 @@ namespace QA350
                 SubmitPassword();  // This might fail and perform mass erase
                 SubmitPassword();  // This will always succeed and perform mass erase
 
+                // Once we are mass-erased, then the bootloader will always run at start
+
                 // Load ram-based BSL
-                WriteFlash("RAM_BSL.00.07.08.38.txt", true);
+                WriteFlash(bootstrapFile, true);
 
                 // Run ram-based BSL
                 SetPC(0x2504);
@@ -74,6 +101,7 @@ namespace QA350
             catch (Exception ex)
             {
                 Debug.WriteLine("Exception during update: " + ex.Message);
+                MessageBox.Show("An exception occured during reflash: " + ex.Message);
             }
         }
 
@@ -148,6 +176,26 @@ namespace QA350
                 Debug.WriteLine("Mass erase failed");
             }
 
+        }
+
+        static bool VerifyValidBootstrap(string fileName)
+        {
+            string[] lines = File.ReadAllLines(fileName);
+
+            if (lines[0] == "@2500" && lines[lines.Length - 1] == "q")
+                return true;
+            else
+                return false;
+        }
+
+        static bool VerifyValidBootloader(string fileName)
+        {
+            string[] lines = File.ReadAllLines(fileName);
+
+            if (lines[0] == "@4400" && lines[lines.Length-1] == "q")
+                return true;
+            else
+                return false;
         }
 
         /// <summary>

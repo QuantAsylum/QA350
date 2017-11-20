@@ -42,7 +42,7 @@ namespace QA350
             numericUpDown4.Value = Convert.ToDecimal(AppSettings.HistoBinInUV);
             numericUpDown5.Value = Convert.ToDecimal(AppSettings.HistoBinInMV);
 
-            numericUpDown6.Value = Convert.ToDecimal(AppSettings.BinCount);
+            numericUpDown6.Value = Convert.ToDecimal(AppSettings.SampleHistory);
 
         }
 
@@ -72,7 +72,7 @@ namespace QA350
             AppSettings.HistoBinInUV = Convert.ToInt32(numericUpDown4.Value);
             AppSettings.HistoBinInMV = Convert.ToInt32(numericUpDown5.Value);
 
-            AppSettings.BinCount = Convert.ToInt32(numericUpDown6.Value);
+            AppSettings.SampleHistory = Convert.ToInt32(numericUpDown6.Value);
 
             Close();
         }

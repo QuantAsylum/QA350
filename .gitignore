@@ -5,6 +5,8 @@
 *.ico
 *.png
 Exclude.txt
+Setup*/
+MSP430 Workspace - Copy*/
 
 #
 # Visual Studio

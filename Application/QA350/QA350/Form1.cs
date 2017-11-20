@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ZedGraph;
@@ -117,16 +118,21 @@ namespace QA350
             // Check if the user has calibrated the device yet
             if (CalData.IsDefault)
             {
-                label4.Text = "UNCALIBRATED";
+                UncalLabel.Text = "UNCALIBRATED";
             }
             else
             {
-                label4.Text = "";
+                UncalLabel.Text = "";
             }
+
+            // Indicate we are NOT in relative mode by hiding the label
+            RelModeLabel.Visible = false;
 
             LoadFontData();
 
             InitGraphs();
+
+            Text += "  (" + Constants.Version.ToString("0.00") + ")";
         }
 
         /// <summary>
@@ -226,7 +232,14 @@ namespace QA350
             // Attempt to connect to the device upon app startup
             if (Hardware.Open())
             {
-                toolStripStatusLabel1.Text = "Opened";
+                Int32 fwVersion = Hardware.GetFirmwareVersion();
+
+                if (fwVersion < Constants.RequiredFwVersion)
+                {
+                    MessageBox.Show("The device firware needs to be updated. Please use the 'Tools->Update QA350 Flash' menu option.");
+                }
+
+                toolStripStatusLabel1.Text = string.Format("Opened. (FW version = {0})", fwVersion.ToString());
                 SetLowRange();
 
                 LineItem line = new LineItem("", GraphData, Color.LimeGreen, SymbolType.None);
@@ -337,6 +350,9 @@ namespace QA350
                 if (v > 50) ovf = true;
             }
 
+            // Subtract the user offset (usually zero)
+            v = v - UserOffset;
+
             // Save the last scaled and zero'd reading
             LastReading = v;
 
@@ -401,6 +417,7 @@ namespace QA350
 
 
                 // Compute histogram
+                AppSettings.BinCount = 100;
                 Histogram h = new Histogram(Readings, GetBinSize(), AppSettings.BinCount);
                 h.Plot(zedGraphControl2);
             }
@@ -435,7 +452,7 @@ namespace QA350
                 CalData = dlg.calData;
 
                 if (CalData.IsDefault == false)
-                    label4.Text = "";
+                    UncalLabel.Text = "";
 
                 if (lightedButton28.On) { SetHighRange(); }
                 else if (lightedButton29.On) { SetLowRange(); }
@@ -446,12 +463,27 @@ namespace QA350
 
         private void lightedButton211_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
         {
-
+            if (SetRelBtn.On == true)
+            {
+                // Just turned it on
+                ResetStats();
+                UserOffset = LastReading;
+                RelModeLabel.Visible = true;
+            }
+            else
+            {
+                // Just turned it off
+                ResetStats();
+                UserOffset = 0;
+                RelModeLabel.Visible = false;
+            }
         }
 
         private void lightedButton210_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
         {
-
+            SetRelBtn.On = false;
+            UserOffset = 0;
+            RelModeLabel.Visible = false;
         }
 
         private double GetBinSize()
@@ -488,17 +520,58 @@ namespace QA350
             }
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        //asdf
+
+        //private void button1_Click(object sender, EventArgs e)
+        //{
+        //    AcqTimer.Enabled = false;
+        //    LEDKickerTimer.Enabled = false;
+        //    Bootloader.EnterBootloader();
+        //}
+
+        //asdf
+
+        //private void button2_Click(object sender, EventArgs e)
+        //{
+        //    if (Hardware.IsConnected)
+        //        Hardware.USBSendData(new byte[] { 0xFF, 0x00 });
+        //}
+
+        private void closeToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            Close();
+        }
+
+        // Re-flash 
+        private void reflashToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            //if (Hardware.IsConnected == false)
+            //    return;
+
+            // Bugbug: From here on out, redirect all console output to a listbox
+            AcqTimer.Enabled = false;
+            LEDKickerTimer.Enabled = false;
+            toolStripStatusLabel1.Text = "Reflashing...";
+
+            if (MessageBox.Show("You are about to reflash the firmware. If you proceed, it will take 3-4 minutes wihtout any updates until the end. Proceed?", "Important!", MessageBoxButtons.OKCancel) != DialogResult.OK)
+            {
+                LEDKickerTimer.Enabled = true;
+                AcqTimer.Enabled = true; 
+                return;
+            }
+
+            // Force hardware to jump to BSL
+            if (Hardware.IsConnected)
+                Hardware.USBSendData(new byte[] { 0xFF, 0x00 });
+
+            // Enter bootloader
+            Thread.Sleep(2000);
             AcqTimer.Enabled = false;
             LEDKickerTimer.Enabled = false;
             Bootloader.EnterBootloader();
-        }
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-            if (Hardware.IsConnected)
-                Hardware.USBSendData(new byte[] { 0xFF, 0x00 });
+            MessageBox.Show("Restart the application and replug the hardware");
+            Close();
         }
     }
 }

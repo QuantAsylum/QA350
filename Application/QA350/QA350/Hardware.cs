@@ -82,6 +82,24 @@ namespace QA350
             }
         }
 
+        static public int GetFirmwareVersion()
+        {
+            if ((Msp430 != null) && (Msp430.IsConnected))
+            {
+                if (USBSendData(new byte[] { 0xFE, 0x00 }))
+                {
+                    byte[] buffer;
+
+                    if (USBRecvData(out buffer))
+                    {
+                        return buffer[0];
+                    }
+                }
+            }
+
+            return -1;
+        }
+
         /// <summary>
         /// Reads the voltage counts at the inputs indicated by the last SetAtten() call. These are raw
         /// reads, no corrections are applied

@@ -41,26 +41,29 @@
             this.label9 = new System.Windows.Forms.Label();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.calibrateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.reflashToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.button1 = new System.Windows.Forms.Button();
+            this.RelModeLabel = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
-            this.label4 = new System.Windows.Forms.Label();
+            this.UncalLabel = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.lightedButton210 = new LightedButton2.LightedButton2();
-            this.lightedButton211 = new LightedButton2.LightedButton2();
+            this.SetRelBtn = new LightedButton2.LightedButton2();
             this.lightedButton28 = new LightedButton2.LightedButton2();
             this.lightedButton29 = new LightedButton2.LightedButton2();
             this.lightedButton27 = new LightedButton2.LightedButton2();
             this.lightedButton25 = new LightedButton2.LightedButton2();
             this.lightedButton26 = new LightedButton2.LightedButton2();
             this.lightedButton22 = new LightedButton2.LightedButton2();
-            this.button2 = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -165,7 +168,8 @@
             // 
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
-            this.calibrateToolStripMenuItem});
+            this.calibrateToolStripMenuItem,
+            this.toolsToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(847, 24);
@@ -174,9 +178,24 @@
             // 
             // fileToolStripMenuItem
             // 
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.closeToolStripMenuItem,
+            this.toolStripMenuItem1});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
+            // 
+            // closeToolStripMenuItem
+            // 
+            this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
+            this.closeToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
+            this.closeToolStripMenuItem.Text = "Close";
+            this.closeToolStripMenuItem.Click += new System.EventHandler(this.closeToolStripMenuItem_Click);
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(100, 6);
             // 
             // calibrateToolStripMenuItem
             // 
@@ -184,6 +203,21 @@
             this.calibrateToolStripMenuItem.Size = new System.Drawing.Size(66, 20);
             this.calibrateToolStripMenuItem.Text = "Calibrate";
             this.calibrateToolStripMenuItem.Click += new System.EventHandler(this.calibrateToolStripMenuItem_Click);
+            // 
+            // toolsToolStripMenuItem
+            // 
+            this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.reflashToolStripMenuItem});
+            this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(47, 20);
+            this.toolsToolStripMenuItem.Text = "Tools";
+            // 
+            // reflashToolStripMenuItem
+            // 
+            this.reflashToolStripMenuItem.Name = "reflashToolStripMenuItem";
+            this.reflashToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.reflashToolStripMenuItem.Text = "Update QA350 Flash";
+            this.reflashToolStripMenuItem.Click += new System.EventHandler(this.reflashToolStripMenuItem_Click);
             // 
             // statusStrip1
             // 
@@ -205,18 +239,17 @@
             // 
             this.panel1.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("panel1.BackgroundImage")));
             this.panel1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
-            this.panel1.Controls.Add(this.button2);
-            this.panel1.Controls.Add(this.button1);
+            this.panel1.Controls.Add(this.RelModeLabel);
             this.panel1.Controls.Add(this.label11);
             this.panel1.Controls.Add(this.label5);
-            this.panel1.Controls.Add(this.label4);
+            this.panel1.Controls.Add(this.UncalLabel);
             this.panel1.Controls.Add(this.label10);
             this.panel1.Controls.Add(this.label2);
             this.panel1.Controls.Add(this.label1);
             this.panel1.Controls.Add(this.label9);
             this.panel1.Controls.Add(this.label3);
             this.panel1.Controls.Add(this.lightedButton210);
-            this.panel1.Controls.Add(this.lightedButton211);
+            this.panel1.Controls.Add(this.SetRelBtn);
             this.panel1.Controls.Add(this.label6);
             this.panel1.Controls.Add(this.lightedButton28);
             this.panel1.Controls.Add(this.label7);
@@ -234,23 +267,24 @@
             this.panel1.Size = new System.Drawing.Size(847, 445);
             this.panel1.TabIndex = 39;
             // 
-            // button1
+            // RelModeLabel
             // 
-            this.button1.Location = new System.Drawing.Point(739, 320);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 45;
-            this.button1.Text = "Update Flash";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.RelModeLabel.AutoSize = true;
+            this.RelModeLabel.BackColor = System.Drawing.Color.Transparent;
+            this.RelModeLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.RelModeLabel.Location = new System.Drawing.Point(556, 81);
+            this.RelModeLabel.Name = "RelModeLabel";
+            this.RelModeLabel.Size = new System.Drawing.Size(88, 20);
+            this.RelModeLabel.TabIndex = 45;
+            this.RelModeLabel.Text = "RELATIVE";
             // 
             // label11
             // 
             this.label11.BackColor = System.Drawing.Color.Transparent;
             this.label11.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label11.Location = new System.Drawing.Point(599, 145);
+            this.label11.Location = new System.Drawing.Point(584, 145);
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(80, 30);
+            this.label11.Size = new System.Drawing.Size(95, 30);
             this.label11.TabIndex = 44;
             this.label11.Text = "1";
             this.label11.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -260,31 +294,31 @@
             this.label5.AutoSize = true;
             this.label5.BackColor = System.Drawing.Color.Transparent;
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label5.Location = new System.Drawing.Point(571, 151);
+            this.label5.Location = new System.Drawing.Point(556, 151);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(31, 20);
             this.label5.TabIndex = 43;
             this.label5.Text = "OF";
             // 
-            // label4
+            // UncalLabel
             // 
-            this.label4.AutoSize = true;
-            this.label4.BackColor = System.Drawing.Color.Transparent;
-            this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label4.Location = new System.Drawing.Point(531, 61);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(134, 20);
-            this.label4.TabIndex = 42;
-            this.label4.Text = "UNCALIBRATED";
+            this.UncalLabel.AutoSize = true;
+            this.UncalLabel.BackColor = System.Drawing.Color.Transparent;
+            this.UncalLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.UncalLabel.Location = new System.Drawing.Point(531, 61);
+            this.UncalLabel.Name = "UncalLabel";
+            this.UncalLabel.Size = new System.Drawing.Size(134, 20);
+            this.UncalLabel.TabIndex = 42;
+            this.UncalLabel.Text = "UNCALIBRATED";
             // 
             // label10
             // 
             this.label10.BackColor = System.Drawing.Color.Transparent;
             this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label10.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.label10.Location = new System.Drawing.Point(495, 145);
+            this.label10.Location = new System.Drawing.Point(442, 145);
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(80, 30);
+            this.label10.Size = new System.Drawing.Size(118, 30);
             this.label10.TabIndex = 41;
             this.label10.Text = "1";
             this.label10.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -318,6 +352,7 @@
             this.lightedButton210.AllowAllOff = true;
             this.lightedButton210.AllowFadeToOff = false;
             this.lightedButton210.BackColor = System.Drawing.Color.Transparent;
+            this.lightedButton210.Enabled = false;
             this.lightedButton210.FillColor = System.Drawing.Color.Transparent;
             this.lightedButton210.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lightedButton210.GroupName = null;
@@ -336,28 +371,28 @@
             this.lightedButton210.TextWhenOn = "Edit";
             this.lightedButton210.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.lightedButton210_ButtonPressed);
             // 
-            // lightedButton211
+            // SetRelBtn
             // 
-            this.lightedButton211.AllowAllOff = true;
-            this.lightedButton211.AllowFadeToOff = false;
-            this.lightedButton211.BackColor = System.Drawing.Color.Transparent;
-            this.lightedButton211.FillColor = System.Drawing.Color.Transparent;
-            this.lightedButton211.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lightedButton211.GroupName = null;
-            this.lightedButton211.LineThick = 1F;
-            this.lightedButton211.Location = new System.Drawing.Point(725, 191);
-            this.lightedButton211.Name = "lightedButton211";
-            this.lightedButton211.OffColor = System.Drawing.Color.DarkGreen;
-            this.lightedButton211.On = false;
-            this.lightedButton211.OnColor = System.Drawing.Color.LimeGreen;
-            this.lightedButton211.OneShot = true;
-            this.lightedButton211.OneShotInterval = 100;
-            this.lightedButton211.OptionMenuIndicator = false;
-            this.lightedButton211.Size = new System.Drawing.Size(50, 30);
-            this.lightedButton211.TabIndex = 34;
-            this.lightedButton211.TextWhenOff = "Set";
-            this.lightedButton211.TextWhenOn = "Clear";
-            this.lightedButton211.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.lightedButton211_ButtonPressed);
+            this.SetRelBtn.AllowAllOff = true;
+            this.SetRelBtn.AllowFadeToOff = false;
+            this.SetRelBtn.BackColor = System.Drawing.Color.Transparent;
+            this.SetRelBtn.FillColor = System.Drawing.Color.Transparent;
+            this.SetRelBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.SetRelBtn.GroupName = null;
+            this.SetRelBtn.LineThick = 1F;
+            this.SetRelBtn.Location = new System.Drawing.Point(725, 191);
+            this.SetRelBtn.Name = "SetRelBtn";
+            this.SetRelBtn.OffColor = System.Drawing.Color.DarkGreen;
+            this.SetRelBtn.On = false;
+            this.SetRelBtn.OnColor = System.Drawing.Color.LimeGreen;
+            this.SetRelBtn.OneShot = false;
+            this.SetRelBtn.OneShotInterval = 100;
+            this.SetRelBtn.OptionMenuIndicator = false;
+            this.SetRelBtn.Size = new System.Drawing.Size(50, 30);
+            this.SetRelBtn.TabIndex = 34;
+            this.SetRelBtn.TextWhenOff = "Set";
+            this.SetRelBtn.TextWhenOn = "Set";
+            this.SetRelBtn.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.lightedButton211_ButtonPressed);
             // 
             // lightedButton28
             // 
@@ -433,6 +468,7 @@
             this.lightedButton25.AllowAllOff = false;
             this.lightedButton25.AllowFadeToOff = false;
             this.lightedButton25.BackColor = System.Drawing.Color.Transparent;
+            this.lightedButton25.Enabled = false;
             this.lightedButton25.FillColor = System.Drawing.Color.Transparent;
             this.lightedButton25.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lightedButton25.GroupName = "UpdateRate";
@@ -495,16 +531,6 @@
             this.lightedButton22.TextWhenOn = "Reset";
             this.lightedButton22.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.lightedButton22_ButtonPressed);
             // 
-            // button2
-            // 
-            this.button2.Location = new System.Drawing.Point(739, 367);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(75, 23);
-            this.button2.TabIndex = 46;
-            this.button2.Text = "Enter BSL";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -515,11 +541,11 @@
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.menuStrip1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Form1";
-            this.ShowIcon = false;
             this.Text = "QA350 DC Volt Meter";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -552,7 +578,7 @@
         private LightedButton2.LightedButton2 lightedButton28;
         private LightedButton2.LightedButton2 lightedButton29;
         private LightedButton2.LightedButton2 lightedButton210;
-        private LightedButton2.LightedButton2 lightedButton211;
+        private LightedButton2.LightedButton2 SetRelBtn;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
@@ -562,11 +588,14 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label10;
-        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label UncalLabel;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.ToolStripMenuItem closeToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem reflashToolStripMenuItem;
+        private System.Windows.Forms.Label RelModeLabel;
     }
 }
 

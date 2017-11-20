@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QA350", "QA350\QA350.csproj", "{7D6215D0-D2BF-4951-9803-F5C759CFF79E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QA350", "Application\QA350\QA350\QA350.csproj", "{7D6215D0-D2BF-4951-9803-F5C759CFF79E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightedButton2", "..\..\DLL\LightedButton2\LightedButton2.csproj", "{E6E01AEB-36EE-4C23-B404-B3BB15A41862}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightedButton2", "DLL\LightedButton2\LightedButton2.csproj", "{E6E01AEB-36EE-4C23-B404-B3BB15A41862}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HidLibrary", "..\HidLibrary\HidLibrary.csproj", "{9E8F1D50-74EA-4C60-BD5C-AB2C5B53BC66}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HidLibrary", "Application\HidLibrary\HidLibrary.csproj", "{9E8F1D50-74EA-4C60-BD5C-AB2C5B53BC66}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

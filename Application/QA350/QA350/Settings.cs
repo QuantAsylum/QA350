@@ -28,6 +28,6 @@ namespace QA350
         public int HistoBinInUV = 10;
 
         // Time
-        public int SampleHistory = 101;
+        public int SampleHistory = 100;
     }
 }

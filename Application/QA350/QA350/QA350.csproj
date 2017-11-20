@@ -32,7 +32,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>Icon350.ico</ApplicationIcon>
+    <ApplicationIcon>QA350Icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -85,12 +85,15 @@
     <Compile Include="Settings.cs" />
     <EmbeddedResource Include="DlgCalibrate2.resx">
       <DependentUpon>DlgCalibrate2.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="DlgEditStats.resx">
       <DependentUpon>DlgEditStats.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -124,7 +127,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Icon350.ico" />
+    <Content Include="QA350Icon.ico" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\DLL\LightedButton2\LightedButton2.csproj">
@@ -137,6 +140,9 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy  /Y "$(SolutionDir)MSP430 Workspace\QA350\Debug\QA350.txt"  "$(TargetDir)\QA350.boot"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

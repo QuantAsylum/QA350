@@ -571,7 +571,7 @@ void main (void)
 
 						case 254:
 							// Read software version
-							data = 3;
+							data = 6;
 
 							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
 							{

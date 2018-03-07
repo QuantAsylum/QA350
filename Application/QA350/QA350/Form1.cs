@@ -98,6 +98,9 @@ namespace QA350
 
         private void Form1_Load(object sender, EventArgs e)
         {
+#if !DEBUG
+            flashVirginDeviceToolStripMenuItem.Visible = false;
+#endif
             TryConnect();
 
             // If needed directories aren't present, create them
@@ -572,6 +575,11 @@ namespace QA350
 
             MessageBox.Show("Restart the application and replug the hardware");
             Close();
+        }
+
+        private void flashVirginDeviceToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Bootloader.EnterBootloader();
         }
     }
 }

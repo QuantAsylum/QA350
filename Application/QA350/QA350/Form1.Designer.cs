@@ -64,6 +64,7 @@
             this.lightedButton25 = new LightedButton2.LightedButton2();
             this.lightedButton26 = new LightedButton2.LightedButton2();
             this.lightedButton22 = new LightedButton2.LightedButton2();
+            this.flashVirginDeviceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -207,7 +208,8 @@
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.reflashToolStripMenuItem});
+            this.reflashToolStripMenuItem,
+            this.flashVirginDeviceToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(47, 20);
             this.toolsToolStripMenuItem.Text = "Tools";
@@ -531,6 +533,13 @@
             this.lightedButton22.TextWhenOn = "Reset";
             this.lightedButton22.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.lightedButton22_ButtonPressed);
             // 
+            // flashVirginDeviceToolStripMenuItem
+            // 
+            this.flashVirginDeviceToolStripMenuItem.Name = "flashVirginDeviceToolStripMenuItem";
+            this.flashVirginDeviceToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.flashVirginDeviceToolStripMenuItem.Text = "Flash Virgin Device";
+            this.flashVirginDeviceToolStripMenuItem.Click += new System.EventHandler(this.flashVirginDeviceToolStripMenuItem_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -596,6 +605,7 @@
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem reflashToolStripMenuItem;
         private System.Windows.Forms.Label RelModeLabel;
+        private System.Windows.Forms.ToolStripMenuItem flashVirginDeviceToolStripMenuItem;
     }
 }
 

@@ -41,14 +41,18 @@
             this.label9 = new System.Windows.Forms.Label();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.loggingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+            this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.calibrateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reflashToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.flashVirginDeviceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.button2 = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
             this.RelModeLabel = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
@@ -61,10 +65,9 @@
             this.lightedButton28 = new LightedButton2.LightedButton2();
             this.lightedButton29 = new LightedButton2.LightedButton2();
             this.lightedButton27 = new LightedButton2.LightedButton2();
-            this.lightedButton25 = new LightedButton2.LightedButton2();
-            this.lightedButton26 = new LightedButton2.LightedButton2();
+            this.FastUpdateBtn = new LightedButton2.LightedButton2();
+            this.SlowUpdateBtn = new LightedButton2.LightedButton2();
             this.lightedButton22 = new LightedButton2.LightedButton2();
-            this.flashVirginDeviceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -73,7 +76,7 @@
             // LEDKickerTimer
             // 
             this.LEDKickerTimer.Enabled = true;
-            this.LEDKickerTimer.Interval = 500;
+            this.LEDKickerTimer.Interval = 800;
             this.LEDKickerTimer.Tick += new System.EventHandler(this.timer1_Tick);
             // 
             // AcqTimer
@@ -180,23 +183,31 @@
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.closeToolStripMenuItem,
-            this.toolStripMenuItem1});
+            this.loggingToolStripMenuItem,
+            this.toolStripMenuItem1,
+            this.closeToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
             // 
-            // closeToolStripMenuItem
+            // loggingToolStripMenuItem
             // 
-            this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            this.closeToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
-            this.closeToolStripMenuItem.Text = "Close";
-            this.closeToolStripMenuItem.Click += new System.EventHandler(this.closeToolStripMenuItem_Click);
+            this.loggingToolStripMenuItem.Name = "loggingToolStripMenuItem";
+            this.loggingToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
+            this.loggingToolStripMenuItem.Text = "Logging";
+            this.loggingToolStripMenuItem.Click += new System.EventHandler(this.loggingToolStripMenuItem_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(100, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(115, 6);
+            // 
+            // closeToolStripMenuItem
+            // 
+            this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
+            this.closeToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
+            this.closeToolStripMenuItem.Text = "Close";
+            this.closeToolStripMenuItem.Click += new System.EventHandler(this.closeToolStripMenuItem_Click);
             // 
             // calibrateToolStripMenuItem
             // 
@@ -221,6 +232,13 @@
             this.reflashToolStripMenuItem.Text = "Update QA350 Flash";
             this.reflashToolStripMenuItem.Click += new System.EventHandler(this.reflashToolStripMenuItem_Click);
             // 
+            // flashVirginDeviceToolStripMenuItem
+            // 
+            this.flashVirginDeviceToolStripMenuItem.Name = "flashVirginDeviceToolStripMenuItem";
+            this.flashVirginDeviceToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.flashVirginDeviceToolStripMenuItem.Text = "Flash Virgin Device";
+            this.flashVirginDeviceToolStripMenuItem.Click += new System.EventHandler(this.flashVirginDeviceToolStripMenuItem_Click);
+            // 
             // statusStrip1
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -241,6 +259,8 @@
             // 
             this.panel1.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("panel1.BackgroundImage")));
             this.panel1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.panel1.Controls.Add(this.button2);
+            this.panel1.Controls.Add(this.button1);
             this.panel1.Controls.Add(this.RelModeLabel);
             this.panel1.Controls.Add(this.label11);
             this.panel1.Controls.Add(this.label5);
@@ -259,15 +279,35 @@
             this.panel1.Controls.Add(this.label8);
             this.panel1.Controls.Add(this.lightedButton27);
             this.panel1.Controls.Add(this.zedGraphControl2);
-            this.panel1.Controls.Add(this.lightedButton25);
+            this.panel1.Controls.Add(this.FastUpdateBtn);
             this.panel1.Controls.Add(this.zedGraphControl1);
-            this.panel1.Controls.Add(this.lightedButton26);
+            this.panel1.Controls.Add(this.SlowUpdateBtn);
             this.panel1.Controls.Add(this.lightedButton22);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 24);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(847, 445);
             this.panel1.TabIndex = 39;
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(405, 140);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(75, 23);
+            this.button2.TabIndex = 47;
+            this.button2.Text = "button2";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(479, 114);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 46;
+            this.button1.Text = "button1";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // RelModeLabel
             // 
@@ -465,50 +505,50 @@
             this.lightedButton27.TextWhenOn = "Edit";
             this.lightedButton27.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.BtnStats_ButtonPressed);
             // 
-            // lightedButton25
+            // FastUpdateBtn
             // 
-            this.lightedButton25.AllowAllOff = false;
-            this.lightedButton25.AllowFadeToOff = false;
-            this.lightedButton25.BackColor = System.Drawing.Color.Transparent;
-            this.lightedButton25.Enabled = false;
-            this.lightedButton25.FillColor = System.Drawing.Color.Transparent;
-            this.lightedButton25.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lightedButton25.GroupName = "UpdateRate";
-            this.lightedButton25.LineThick = 1F;
-            this.lightedButton25.Location = new System.Drawing.Point(725, 266);
-            this.lightedButton25.Name = "lightedButton25";
-            this.lightedButton25.OffColor = System.Drawing.Color.DarkGreen;
-            this.lightedButton25.On = false;
-            this.lightedButton25.OnColor = System.Drawing.Color.LimeGreen;
-            this.lightedButton25.OneShot = false;
-            this.lightedButton25.OneShotInterval = 100;
-            this.lightedButton25.OptionMenuIndicator = false;
-            this.lightedButton25.Size = new System.Drawing.Size(50, 30);
-            this.lightedButton25.TabIndex = 30;
-            this.lightedButton25.TextWhenOff = "Fast";
-            this.lightedButton25.TextWhenOn = "Fast";
+            this.FastUpdateBtn.AllowAllOff = false;
+            this.FastUpdateBtn.AllowFadeToOff = false;
+            this.FastUpdateBtn.BackColor = System.Drawing.Color.Transparent;
+            this.FastUpdateBtn.Enabled = false;
+            this.FastUpdateBtn.FillColor = System.Drawing.Color.Transparent;
+            this.FastUpdateBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.FastUpdateBtn.GroupName = "UpdateRate";
+            this.FastUpdateBtn.LineThick = 1F;
+            this.FastUpdateBtn.Location = new System.Drawing.Point(725, 266);
+            this.FastUpdateBtn.Name = "FastUpdateBtn";
+            this.FastUpdateBtn.OffColor = System.Drawing.Color.DarkGreen;
+            this.FastUpdateBtn.On = false;
+            this.FastUpdateBtn.OnColor = System.Drawing.Color.LimeGreen;
+            this.FastUpdateBtn.OneShot = false;
+            this.FastUpdateBtn.OneShotInterval = 100;
+            this.FastUpdateBtn.OptionMenuIndicator = false;
+            this.FastUpdateBtn.Size = new System.Drawing.Size(50, 30);
+            this.FastUpdateBtn.TabIndex = 30;
+            this.FastUpdateBtn.TextWhenOff = "Fast";
+            this.FastUpdateBtn.TextWhenOn = "Fast";
             // 
-            // lightedButton26
+            // SlowUpdateBtn
             // 
-            this.lightedButton26.AllowAllOff = false;
-            this.lightedButton26.AllowFadeToOff = false;
-            this.lightedButton26.BackColor = System.Drawing.Color.Transparent;
-            this.lightedButton26.FillColor = System.Drawing.Color.Transparent;
-            this.lightedButton26.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lightedButton26.GroupName = "UpdateRate";
-            this.lightedButton26.LineThick = 1F;
-            this.lightedButton26.Location = new System.Drawing.Point(784, 266);
-            this.lightedButton26.Name = "lightedButton26";
-            this.lightedButton26.OffColor = System.Drawing.Color.DarkGreen;
-            this.lightedButton26.On = true;
-            this.lightedButton26.OnColor = System.Drawing.Color.LimeGreen;
-            this.lightedButton26.OneShot = false;
-            this.lightedButton26.OneShotInterval = 100;
-            this.lightedButton26.OptionMenuIndicator = false;
-            this.lightedButton26.Size = new System.Drawing.Size(50, 30);
-            this.lightedButton26.TabIndex = 29;
-            this.lightedButton26.TextWhenOff = "Slow";
-            this.lightedButton26.TextWhenOn = "Slow";
+            this.SlowUpdateBtn.AllowAllOff = false;
+            this.SlowUpdateBtn.AllowFadeToOff = false;
+            this.SlowUpdateBtn.BackColor = System.Drawing.Color.Transparent;
+            this.SlowUpdateBtn.FillColor = System.Drawing.Color.Transparent;
+            this.SlowUpdateBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.SlowUpdateBtn.GroupName = "UpdateRate";
+            this.SlowUpdateBtn.LineThick = 1F;
+            this.SlowUpdateBtn.Location = new System.Drawing.Point(784, 266);
+            this.SlowUpdateBtn.Name = "SlowUpdateBtn";
+            this.SlowUpdateBtn.OffColor = System.Drawing.Color.DarkGreen;
+            this.SlowUpdateBtn.On = true;
+            this.SlowUpdateBtn.OnColor = System.Drawing.Color.LimeGreen;
+            this.SlowUpdateBtn.OneShot = false;
+            this.SlowUpdateBtn.OneShotInterval = 100;
+            this.SlowUpdateBtn.OptionMenuIndicator = false;
+            this.SlowUpdateBtn.Size = new System.Drawing.Size(50, 30);
+            this.SlowUpdateBtn.TabIndex = 29;
+            this.SlowUpdateBtn.TextWhenOff = "Slow";
+            this.SlowUpdateBtn.TextWhenOn = "Slow";
             // 
             // lightedButton22
             // 
@@ -532,13 +572,6 @@
             this.lightedButton22.TextWhenOff = "Reset";
             this.lightedButton22.TextWhenOn = "Reset";
             this.lightedButton22.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.lightedButton22_ButtonPressed);
-            // 
-            // flashVirginDeviceToolStripMenuItem
-            // 
-            this.flashVirginDeviceToolStripMenuItem.Name = "flashVirginDeviceToolStripMenuItem";
-            this.flashVirginDeviceToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.flashVirginDeviceToolStripMenuItem.Text = "Flash Virgin Device";
-            this.flashVirginDeviceToolStripMenuItem.Click += new System.EventHandler(this.flashVirginDeviceToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -581,8 +614,8 @@
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.Label label9;
-        private LightedButton2.LightedButton2 lightedButton26;
-        private LightedButton2.LightedButton2 lightedButton25;
+        private LightedButton2.LightedButton2 SlowUpdateBtn;
+        private LightedButton2.LightedButton2 FastUpdateBtn;
         private LightedButton2.LightedButton2 lightedButton27;
         private LightedButton2.LightedButton2 lightedButton28;
         private LightedButton2.LightedButton2 lightedButton29;
@@ -606,6 +639,9 @@
         private System.Windows.Forms.ToolStripMenuItem reflashToolStripMenuItem;
         private System.Windows.Forms.Label RelModeLabel;
         private System.Windows.Forms.ToolStripMenuItem flashVirginDeviceToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem loggingToolStripMenuItem;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
     }
 }
 

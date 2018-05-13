@@ -55,11 +55,9 @@
 #include "USB_API/USB_HID_API/UsbHid.h"
 #include "USB_app/usbConstructs.h"
 
-//
-// NOTE: Modify hal.h to select a specific evaluation board and customize for
-// your own board.
-//
 #include "hal.h"
+
+#include "fifo.h"
 
 #define UART 		USCI_A1_BASE
 #define TIMER 		TIMER_A0_BASE
@@ -67,10 +65,12 @@
 #define REF         REF_BASE
 #define SPI 		USCI_A1_BASE
 
-// Fwd decl
+// Forward Declarations
 uint32_t GetSysTime();
 void DelayUS(uint16_t delayUS);
-void Delay(uint16_t delayMS);
+void Delay(uint32_t delayMS);
+void ProcessUsbData();
+void SetADS1256SampleRate(uint8_t);
 
 // Global flags set by events
 volatile uint8_t bCommandBeingProcessed = FALSE;
@@ -78,33 +78,20 @@ volatile uint8_t bDataReceiveCompleted_event = FALSE;  // data receive completed
 
 // Application globals
 uint16_t x,y;
-uint8_t size;
-char c[2] = "";
 
-// USB buffer is 4 bytes.
-#define bufferLen 4
-uint8_t buffer[bufferLen];
-
-// Holds outgoing strings to be sent
-char outString[65];
-
-#define ADCWORDS 16
-int ADCData[ADCWORDS];
+// USB return buffer is 48 bytes. It can be a little larger, but
+// the HID protocol TI uses for a pipe has some overhead itself.
+// An ADC word is 24 bits, and the upper 8 bits are used for housekeeping
+// so this means we can hold 12 32-bit samples per HID read
+#define USB_BUF_LEN 48
+uint8_t UsbBuffer[USB_BUF_LEN];
 
 // This is updated at 1mS rate. This keeps track of the number of milliseconds elapsed since
 // system boot
 volatile uint32_t SysTicks;
 
-
 volatile uint16_t LEDConnected;  // Kicked by PC application at least once per second to keep LED lit
 volatile uint8_t LEDCommand;     // Toggled for 50 mS upon receipt of command from the PC
-
-volatile uint8_t MainThreadRun;
-
-// Set by ISR, cleared by main thread. The ISR sets this var when it wants the main task to
-// run.
-bool RunMain = false;
-
 
 void InitClocks()
 {
@@ -144,13 +131,13 @@ void InitClocks()
 
 
 // ADS1256 Primitives
-#define IS_DATAREADY   (~P5IN & 0x80)
-#define ASSERT_SYNC    (P5OUT = P5IN & ~0x40)
-#define DEASSERT_SYNC  (P5OUT = P5IN | 0x40)
-#define ASSERT_CS      (P4OUT = P4IN & ~0x40)
-#define DEASSERT_CS    (P4OUT = P4IN & ~0x40)
-#define ASSERT_RESET   (P4OUT = P4IN & ~0x80)
-#define DEASSERT_RESET (P4OUT = P4IN | 0x80)
+#define IS_DATAREADY   (~P2IN & 0x20)
+//#define ASSERT_SYNC    (P5OUT = P5IN & ~0x40)
+//#define DEASSERT_SYNC  (P5OUT = P5IN | 0x40)
+//#define ASSERT_CS      (P4OUT = P4IN & ~0x40)
+//#define DEASSERT_CS    (P4OUT = P4IN & ~0x40)
+//#define ASSERT_RESET   (P4OUT = P4IN & ~0x80)
+//#define DEASSERT_RESET (P4OUT = P4IN | 0x80)
 
 void InitGPIO()
 {
@@ -161,17 +148,21 @@ void InitGPIO()
 	// Set P1.0 as ACLK output
 	GPIO_setAsPeripheralModuleFunctionOutputPin(GPIO_PORT_P1, GPIO_PIN0);
 
-	// ADS1256 DRDY Input pin. When low, it indicates that data is ready
-	GPIO_setAsInputPin(GPIO_PORT_P5, GPIO_PIN7);
+	// ADS1256 DRDY Input pin is P2.5 and P5.7 (P5.7 on old board). When low, it indicates that data is ready.
+	// Older boards used P5.7, but that pin didn't have an interrupt and must be modified
+	// to route the DRDY signal to P2.5. On new boards, P5.7 can be disconnected completely
+	GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN5);
+	GPIO_interruptEdgeSelect(GPIO_PORT_P2, GPIO_PIN5, GPIO_HIGH_TO_LOW_TRANSITION);
+
 
 	// ADS1256 SYNC
-	GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN6);
+	//GPIO_setAsOutputPin(GPIO_PORT_P5, GPIO_PIN6);
 
 	// ADS1256 RESET
-	GPIO_setAsOutputPin(GPIO_PORT_P4, GPIO_PIN7);
+	//GPIO_setAsOutputPin(GPIO_PORT_P4, GPIO_PIN7);
 
 	// ADS1256 CS
-	GPIO_setAsOutputPin(GPIO_PORT_P4, GPIO_PIN6);
+	//GPIO_setAsOutputPin(GPIO_PORT_P4, GPIO_PIN6);
 
 	// ADS1256 DOUT == MSP430 SPI DIN
 	GPIO_setAsInputPin(GPIO_PORT_P4, GPIO_PIN5);
@@ -200,12 +191,13 @@ void InitTimerA()
     tp.startTimer = true;
     tp.timerClear = TIMER_A_DO_CLEAR;
     tp.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_DISABLE;
-    tp.timerPeriod = 375;
+    tp.timerPeriod = 375;  // Divide 375K by 375 to get 1mS interrupt rate
     Timer_A_initUpMode(TIMER, &tp);
 }
 
 //
-// SPI communication with ADS ADC. We'll run at 1 MHz
+// SPI communication with ADS ADC. We'll run at 1 MHz. Max for ADS1256 is 2.5 MHz
+// (see figure 1 in spec, where t2l + t2h = 400 nS = 2.5 MHz
 //
 void InitSPI()
 {
@@ -228,7 +220,7 @@ uint32_t SendSPI(uint32_t data)
 {
 	uint32_t r = 0;
 
-	ASSERT_CS;
+	//ASSERT_CS;
 
 	USCI_A_SPI_transmitData(SPI, data >> 24);
 	r = (r << 8) + USCI_A_SPI_receiveData(SPI);
@@ -242,7 +234,7 @@ uint32_t SendSPI(uint32_t data)
 	USCI_A_SPI_transmitData(SPI, data >> 0);
 	r = (r << 8) + USCI_A_SPI_receiveData(SPI);
 
-	DEASSERT_CS;
+	//DEASSERT_CS;
 
 	return r;
 }
@@ -264,7 +256,7 @@ void WriteADS1256Reg(uint8_t reg, uint8_t val)
 	reg &= 0x0F;  // Mask register
 	reg |= 0x50;  // Command
 
-	ASSERT_CS;
+	//ASSERT_CS;
 
 	USCI_A_SPI_transmitData(SPI, reg);   // This is the 1st command byte
 	while (USCI_A_SPI_isBusy(SPI));
@@ -274,13 +266,13 @@ void WriteADS1256Reg(uint8_t reg, uint8_t val)
 	while (USCI_A_SPI_isBusy(SPI));
     USCI_A_SPI_receiveData(SPI);         // Junk read
 
-	USCI_A_SPI_transmitData(SPI, val);    // Run the clock for 8 more cycles to write the byte
+	USCI_A_SPI_transmitData(SPI, val);   // Run the clock for 8 more cycles to write the byte
 	while (USCI_A_SPI_isBusy(SPI));
-	USCI_A_SPI_receiveData(SPI);          // Junk read
-	DelayUS(2);
+	USCI_A_SPI_receiveData(SPI);         // Junk read
+	//DelayUS(2);
 
-	DEASSERT_CS;
-	DelayUS(10);
+	//DEASSERT_CS;
+	//DelayUS(10);
 }
 
 //
@@ -291,7 +283,7 @@ uint8_t ReadADS1256Reg(uint8_t reg)
 	reg &= 0x0F;  // Mask register
 	reg |= 0x10;  // Command
 
-	ASSERT_CS;
+	//ASSERT_CS;
 
 	USCI_A_SPI_transmitData(SPI, reg);   // This is the 1st command byte
 	while (USCI_A_SPI_isBusy(SPI));
@@ -302,14 +294,14 @@ uint8_t ReadADS1256Reg(uint8_t reg)
 	while (USCI_A_SPI_isBusy(SPI));
     USCI_A_SPI_receiveData(SPI);         // Junk read
 
-	DelayUS(10);
+	DelayUS(10);						// This is t6 in spec (6.5uS is the min). See Fig1 and Fig 30
 
 	USCI_A_SPI_transmitData(SPI, 0);    // Run the clock for 8 more cycles to grab the byte
 	while (USCI_A_SPI_isBusy(SPI));
-	DelayUS(2);
-	DEASSERT_CS;
+	//DelayUS(2);
+	//DEASSERT_CS;
 
-	DelayUS(10);
+	//DelayUS(10);
 
 	return USCI_A_SPI_receiveData(SPI);
 }
@@ -326,13 +318,13 @@ uint32_t ReadADS1256Data()
 	while (IS_DATAREADY == 0)
 		;
 
-	ASSERT_CS;
+	//ASSERT_CS;
 
 	USCI_A_SPI_transmitData(SPI, 0x01);  // Send first command byte (command + addr)
 	while (USCI_A_SPI_isBusy(SPI));
 	USCI_A_SPI_receiveData(SPI);         // Junk read
 
-	// Delay 10 uS to wait for response
+	// Delay t6 (see spec: at least 6.5us) to wait for response
 	DelayUS(10);
 
 	USCI_A_SPI_transmitData(SPI, 0x00);
@@ -347,9 +339,44 @@ uint32_t ReadADS1256Data()
 	while (USCI_A_SPI_isBusy(SPI));
 	data = (data << 8) + USCI_A_SPI_receiveData(SPI);
 
-	DEASSERT_CS;
+	//DEASSERT_CS;
 
 	return data;
+}
+
+// Issues SYNC command. Forces sampling to re-start, which will
+// also cause DRDY to go high. This needs to be called whenever
+// mux is changed, or pga is changed, or sample rate is changed,
+// etc
+void SyncADS1256()
+{
+	// See figure 36 in spec
+	USCI_A_SPI_transmitData(SPI, 0xFC);  // Sync command
+	DelayUS(10);                         // See t11 in spec. This is 3.1uS minimum
+	USCI_A_SPI_transmitData(SPI, 0x00);  // Wakeup command
+
+}
+
+
+void ResetADS1256()
+{
+	uint8_t i;
+
+	// Reset part. We don't have a CS, so if the comm gets out of sync with
+	// the part, then the SPI bus will require 32 DRDY periods to reset. At
+	// the slow sample rate, this is 12.8 seconds. So it's very important
+	// to ensure SPI communications never get out of sync. But if they do
+	// this will try 8 times to reset, hopefully overcoming any sync issue
+	//
+	// Upon reset we'll revert to 30K sample rate. And then we must
+	// wait 32 cycles for the SPI bus to clear. This is 32 * 33uS = 1mS
+	for (i=0; i<8; i++)
+	{
+		USCI_A_SPI_transmitData(SPI, 0xFE);
+		DelayUS(50);
+	}
+
+	DelayUS(5000);
 }
 
 //
@@ -367,6 +394,8 @@ void SetADS1256PGA(int pga)
 {
 	pga &= 0x7;
 	WriteADS1256Reg(2, pga);
+	SyncADS1256();
+
 	//WaitUntilDataReady(); // We can't wait, otherwise it screws up USB communications
 }
 
@@ -382,6 +411,8 @@ void SetADS1256Atten(int attenLevel)
 		//case 3: WriteADS1256Reg(1, 0x52); break;
 	}
 
+	SyncADS1256();
+
 	//ADS1256SelfCal();
 }
 
@@ -394,30 +425,48 @@ void ADS1256SelfCal()
 
 void InitADS1256()
 {
-    volatile uint8_t a, b, c, d, e;
+	//DEASSERT_RESET;
+	//DEASSERT_SYNC;
+	DelayUS(1000);
 
-	DEASSERT_RESET;
-	DEASSERT_SYNC;
-	Delay(1);
+	WriteADS1256Reg(0, 0x6);  // Enable buffer and enable auto cal
+	SyncADS1256();
+	//WaitUntilDataReady();
 
-
-	WriteADS1256Reg(0, 0x6);  // Enable buffer
-	WaitUntilDataReady();
-
-	SetADS1256Atten(0);       // Select inputs 3/4
-	WaitUntilDataReady();
+	SetADS1256Atten(0);       // Select inputs 3/4. This will issue sync
+	//WaitUntilDataReady();
 
 	WriteADS1256Reg(2, 0);    // CLKout off, sensor detect off, PGA = 1
-	WaitUntilDataReady();
+	SyncADS1256();
+	//WaitUntilDataReady();
 
-	WriteADS1256Reg(3, 0x3);  // Set to 2.5 SPS
-	//WriteADS1256Reg(3, 0x23);   // Set to 10SPS
-	//WriteADS1256Reg(3, 0x82);   // Set to 100SPS
-	WaitUntilDataReady();
+	SetADS1256SampleRate(1);
+	SyncADS1256();
+	//WaitUntilDataReady();
+}
+
+void SetADS1256SampleRate(uint8_t sampleRate)
+{
+	if (sampleRate == 0)
+	{
+		// Sample slow, 400mS sample period
+		WriteADS1256Reg(3, 0x3); // Set to 2.5 SPS
+		//WaitUntilDataReady();
+	}
+	else if (sampleRate == 1)
+	{
+		// Sample fast, 1 mS period
+		WriteADS1256Reg(3, 0xA1); // Set to 1000 sps
+		//WriteADS1256Reg(3, 0xC0); // Set to 3750 sps
+		//WaitUntilDataReady();
+	}
+
+	SyncADS1256();
 }
 
 //
-// Cycle through the LEDs to indicate to the user  we've turned on
+// Cycle through the LEDs to indicate to the user  we've turned on.
+// This is self-time, no other timing resources needed
 //
 void SweepLED()
 {
@@ -452,28 +501,34 @@ void main (void)
     WDT_A_hold(WDT_A_BASE); // Stop watchdog timer
 
     // Minimum Vcore setting required for the USB API is PMM_CORE_LEVEL_2 .
-#ifndef  DRIVERLIB_LEGACY_MODE
     PMM_setVCore(PMM_CORE_LEVEL_2);
-#else
-    PMM_setVCore(PMM_BASE, PMM_CORE_LEVEL_2);
-#endif
 
     __disable_interrupt();
 
-    //initPorts();           // Config GPIOS for low-power (output low)
     InitGPIO();
     InitClocks();
 
-    InitSPI();
+    // Indicate we've booted
     SweepLED();
+
+    InitSPI();
     InitTimerA();
 
+    // At this point, interrupts must be enabled as the
+    // routines immediately following rely on them for timing
+    __enable_interrupt();  // Enable interrupts globally
+
+    ResetADS1256();
+    DelayUS(5000);           // Safe number
     InitADS1256();
+    DelayUS(5000);           // Safe number
+    SetADS1256SampleRate(1); // Set fast sample rate
 
     USB_setup(TRUE, TRUE); // Init USB & events; if a host is present, connect
 
-    __enable_interrupt();  // Enable interrupts globally
-    
+    // Enable DRDY interrupt handling.
+	GPIO_enableInterrupt(GPIO_PORT_P2, GPIO_PIN5);
+
     while (1)
     {
         // Check the USB state and directly main loop accordingly
@@ -487,7 +542,7 @@ void main (void)
 				if (!(USBHID_intfStatus(HID0_INTFNUM, &x, &y) & kUSBHID_waitingForReceive))
 				{
 					// Start a receive operation. Everything arrives as 2 byte packets.
-					if (USBHID_receiveData(buffer, 2, HID0_INTFNUM) == kUSBHID_busNotAvailable)
+					if (USBHID_receiveData(UsbBuffer, 2, HID0_INTFNUM) == kUSBHID_busNotAvailable)
 					{
 						// Abort receive is BUS is not available
 						USBHID_abortReceive(&x,HID0_INTFNUM);
@@ -508,99 +563,13 @@ void main (void)
                 // Wait in LPM0 until a receive operation has completed
                 __bis_SR_register(LPM0_bits + GIE);
 
-                uint32_t data;
 
                 if (bDataReceiveCompleted_event)
                 {
                     bDataReceiveCompleted_event = FALSE;
-                    
-                    // Here, data was received. Verify the byte is the command to start conversion
-                    switch (buffer[0])
-                    {
-						case 0:
-							// This is a kick command. Light the LED for another 1000 mS
-							LEDConnected = 1000;
-							break;
-
-						case 1:
-							// Read ADC data command
-							LEDCommand = 100;
-							data = ReadADS1256Data();
-
-							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
-							{
-								// Operation may still be open; cancel it if the
-								// send fails, escape the main loop
-								USBHID_abortSend(&x,HID0_INTFNUM);
-								break;
-							}
-							else
-							{
-								// Send was successful
-
-							}
-							break;
-
-						case 2:
-							// Set PGA
-							SetADS1256PGA(buffer[1]);
-							break;
-
-						case 3:
-							// Set attentuator
-							SetADS1256Atten(buffer[1]);
-							break;
-
-						case 253:
-							// Read serial number
-							data = 12345678;
-
-							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
-							{
-								// Operation may still be open; cancel it if the
-								// send fails, escape the main loop
-								USBHID_abortSend(&x,HID0_INTFNUM);
-								break;
-							}
-							else
-							{
-								// Send was successful
-
-							}
-							break;
-
-						case 254:
-							// Read software version
-							data = 6;
-
-							if (hidSendDataInBackground( (uint8_t*)&data, 4, HID0_INTFNUM,0))
-							{
-								// Operation may still be open; cancel it if the
-								// send fails, escape the main loop
-								USBHID_abortSend(&x,HID0_INTFNUM);
-								break;
-							}
-							else
-							{
-								// Send was successful
-
-							}
-							break;
-
-						case 255:
-							// Update MSP430 Firmware. See section 3.8.1 in http://www.ti.com/lit/ug/slau319l/slau319l.pdf
-							__disable_interrupt();
-							USBKEYPID = 0x9628;  		// Unlock USB configuration registers
-							USBCNF &= ~PUR_EN; 			// Set PUR pin to hi-Z, logically disconnect from host
-							USBPWRCTL &= ~VBOFFIE; 		// Disable VUSBoff interrupt
-							USBKEYPID = 0x9600; 		// Lock USB configuration register
-							__delay_cycles(500000);
-							((void (*)())0x1000)(); 	// Call BSL
-
-							break;
-                    }
-
+                    ProcessUsbData();
                 }
+
                 break;
 
             // These cases are executed while your device is disconnected from
@@ -627,8 +596,175 @@ void main (void)
 } //main()
 
 //
+// Called from the main loop above. this handles all the USB command processing
+//
+void ProcessUsbData()
+{
+	uint8_t i;
+    uint32_t data;
+
+	// Here, data was received. The first byte is the command
+	switch (UsbBuffer[0])
+	{
+		case 0:
+			// This is a kick command. Light the LED for another 1000 mS
+			LEDConnected = 1000;  	// 1 second timeout
+			break;
+
+		case 1:
+			// Read last ADC reading. This won't disturb the fifo
+			LEDCommand = 100; 		// 100 mS flash
+
+			data = FifoPeekLastPushed();
+
+			UsbBuffer[0] = data >> 24;
+			UsbBuffer[1] = data >> 16;
+			UsbBuffer[2] = data >> 8;
+			UsbBuffer[3] = data >> 0;
+
+			if (hidSendDataInBackground( UsbBuffer, USB_BUF_LEN, HID0_INTFNUM,0))
+			{
+				// Operation may still be open; cancel it if the
+				// send fails, escape the main loop
+				USBHID_abortSend(&x,HID0_INTFNUM);
+				break;
+			}
+			else
+			{
+				// Send was successful
+
+			}
+			break;
+
+		case 2:
+			// Set PGA
+			SetADS1256PGA(UsbBuffer[1]);
+			break;
+
+		case 3:
+			// Set attentuator
+			SetADS1256Atten(UsbBuffer[1]);
+			break;
+
+		case 4:
+			// Stream data. Grab 12 words / 48 bytes from the FIFO
+			LEDCommand = 100; 		// 100 mS flash
+
+			for (i=0; i<48; i+=4)
+			{
+				data = FifoPop();
+				UsbBuffer[i+0] = data >> 24;
+				UsbBuffer[i+1] = data >> 16;
+				UsbBuffer[i+2] = data >> 8;
+				UsbBuffer[i+3] = data >> 0;
+			}
+
+			if (hidSendDataInBackground( UsbBuffer, USB_BUF_LEN, HID0_INTFNUM,0))
+			{
+				// Operation may still be open; cancel it if the
+				// send fails, escape the main loop
+				USBHID_abortSend(&x,HID0_INTFNUM);
+				break;
+			}
+			else
+			{
+				// Send was successful
+
+			}
+			break;
+
+		case 5:
+			// Query fifo count. If more than 12, then host can pull a full buffer
+			data = FifoCount();
+			UsbBuffer[0] = data >> 24;
+			UsbBuffer[1] = data >> 16;
+			UsbBuffer[2] = data >> 8;
+			UsbBuffer[3] = data >> 0;
+
+			if (hidSendDataInBackground( UsbBuffer, USB_BUF_LEN, HID0_INTFNUM,0))
+			{
+				// Operation may still be open; cancel it if the
+				// send fails, escape the main loop
+				USBHID_abortSend(&x,HID0_INTFNUM);
+				break;
+			}
+			else
+			{
+				// Send was successful
+
+			}
+			break;
+
+		case 253:
+			// Read serial number
+			data = 12345678;
+			UsbBuffer[0] = data >> 24;
+			UsbBuffer[1] = data >> 16;
+			UsbBuffer[2] = data >> 8;
+			UsbBuffer[3] = data >> 0;
+
+			if (hidSendDataInBackground( UsbBuffer, USB_BUF_LEN, HID0_INTFNUM,0))
+			{
+				// Operation may still be open; cancel it if the
+				// send fails, escape the main loop
+				USBHID_abortSend(&x,HID0_INTFNUM);
+				break;
+			}
+			else
+			{
+				// Send was successful
+
+			}
+			break;
+
+		case 254:
+			// Read software version
+			data = 10;
+			UsbBuffer[0] = data >> 24;
+			UsbBuffer[1] = data >> 16;
+			UsbBuffer[2] = data >> 8;
+			UsbBuffer[3] = data >> 0;
+
+			if (hidSendDataInBackground( UsbBuffer, USB_BUF_LEN, HID0_INTFNUM,0))
+			{
+				// Operation may still be open; cancel it if the
+				// send fails, escape the main loop
+				USBHID_abortSend(&x,HID0_INTFNUM);
+				break;
+			}
+			else
+			{
+				// Send was successful
+
+			}
+			break;
+
+		case 255:
+			// Update MSP430 Firmware. See section 3.8.1 in http://www.ti.com/lit/ug/slau319l/slau319l.pdf
+			__disable_interrupt();
+			USBKEYPID = 0x9628;  		// Unlock USB configuration registers
+			USBCNF &= ~PUR_EN; 			// Set PUR pin to hi-Z, logically disconnect from host
+			USBPWRCTL &= ~VBOFFIE; 		// Disable VUSBoff interrupt
+			USBKEYPID = 0x9600; 		// Lock USB configuration register
+			__delay_cycles(500000);
+			((void (*)())0x1000)(); 	// Call BSL
+
+			break;
+	}
+
+}
+
+//
 // ISR Code
 //
+#pragma vector=PORT2_VECTOR
+__interrupt void Port_5(void)
+{
+	uint32_t data = ReadADS1256Data();
+	FifoPush(data);
+	GPIO_clearInterruptFlag(GPIO_PORT_P2, GPIO_PIN5);
+}
+
 
 
 #pragma vector=TIMER0_A0_VECTOR
@@ -658,7 +794,7 @@ __interrupt void Timer0_A0 (void)
 		P1OUT &= ~BIT2;
 	}
 
-	// Stable LED Indicates power has been applied for > 10 minutes. Bottom LED is BIT1.
+	// Stable LED Indicates power has been applied for > 10 minutes (600K ticks). Bottom LED is BIT1.
 	// BUGBUG 2^32 mS = 1100 hours. This means the Stable LED will go off after 1100 hours
 	// of being on
 	if (SysTicks > 600000L)
@@ -722,9 +858,9 @@ void __attribute__ ((interrupt(UNMI_VECTOR))) UNMI_ISR (void)
 //
 
 //
-// s the specified number of milliseconds
+// delays the specified number of milliseconds
 //
-void Delay(uint16_t delayMS)
+void Delay(uint32_t delayMS)
 {
 	uint32_t target = GetSysTime() + delayMS;
 
@@ -733,7 +869,7 @@ void Delay(uint16_t delayMS)
 }
 
 //
-// Delays specified number of microseconds.
+// Delays specified number of microseconds. This is not exact
 //
 void DelayUS(uint16_t delayUS)
 {
@@ -747,7 +883,7 @@ void DelayUS(uint16_t delayUS)
 }
 
 //
-// Returns the number of milliseconds elapsed since boot
+// Returns the number of half milliseconds elapsed since boot
 //
 uint32_t GetSysTime()
 {

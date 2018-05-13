@@ -115,20 +115,24 @@ namespace HidLibrary
             return Read(0);
         }
 
+        public HidDeviceData FastRead(int timeout)
+        {
+            if (IsOpen == false) OpenDevice();
+            try
+            {
+                return ReadData(timeout);
+            }
+            catch
+            {
+                return new HidDeviceData(HidDeviceData.ReadStatus.ReadError);
+            }
+        }
+
         public HidDeviceData Read(int timeout)
         {
             if (IsConnected)
             {
-                if (IsOpen == false) OpenDevice();
-                try
-                {
-                    return ReadData(timeout);
-                }
-                catch
-                {
-                    return new HidDeviceData(HidDeviceData.ReadStatus.ReadError);
-                }
-
+                return FastRead(timeout);  
             }
             return new HidDeviceData(HidDeviceData.ReadStatus.NotConnected);
         }
@@ -307,19 +311,24 @@ namespace HidLibrary
             return Write(data, 0);
         }
 
+        public bool FastWrite(byte[] data, int timeout)
+        {
+            if (IsOpen == false) OpenDevice();
+            try
+            {
+                return WriteData(data, timeout);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public bool Write(byte[] data, int timeout)
         {
             if (IsConnected)
             {
-                if (IsOpen == false) OpenDevice();
-                try
-                {
-                    return WriteData(data, timeout);
-                }
-                catch
-                {
-                    return false;
-                }
+                FastWrite(data, timeout);
             }
             return false;
         }

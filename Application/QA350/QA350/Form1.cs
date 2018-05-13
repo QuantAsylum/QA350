@@ -69,6 +69,12 @@ namespace QA350
         Font LCDFontBig;
         Font LCDFontSmall;
 
+        // Log file
+        enum LoggingSpeedEnum { Fast_1KHz, Slow_2p5Hz}
+        LoggingSpeedEnum LogSpeed = LoggingSpeedEnum.Slow_2p5Hz;
+        bool LoggingEnabled = false;
+        string LogFile = "";
+
         /// <summary>
         /// Tracks history of readings. This is cleared automatically on gain range changes
         /// </summary>
@@ -221,7 +227,7 @@ namespace QA350
             zedGraphControl2.GraphPane.XAxis.Color = Color.LimeGreen;
             zedGraphControl2.GraphPane.YAxis.Color = Color.LimeGreen;
             zedGraphControl2.GraphPane.Title.FontSpec.FontColor = Color.LimeGreen;
-            zedGraphControl2.GraphPane.Title.FontSpec.Size = 30;
+            zedGraphControl2.GraphPane.Title.FontSpec.Size = 30; 
             zedGraphControl2.GraphPane.Title.Text = "---";
             zedGraphControl2.GraphPane.XAxis.Title.IsVisible = false;
             zedGraphControl2.GraphPane.YAxis.Title.IsVisible = false;
@@ -252,7 +258,7 @@ namespace QA350
             else
             {
                 toolStripStatusLabel1.Text = "Open failed...please plug in QA350";
-                AcqTimer.Enabled = false;
+                AcqTimer.Enabled = false; 
             }
         }
 
@@ -271,13 +277,15 @@ namespace QA350
         }
 
         /// <summary>
-        /// LED timer kick. About every 500 mS, a 'ping' message is sent to the device to keep the 'LINK' LED
+        /// LED timer kick. About every 800 mS, a 'ping' message is sent to the device to keep the 'LINK' LED
         /// lit. If the device isn't connected, then an attempt to connect is re-tried
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
+            return;
+
             if (Hardware.IsConnected)
             {
                 Hardware.KickLED();
@@ -325,6 +333,8 @@ namespace QA350
         /// <param name="e"></param>
         private void AckTimer_Tick(object sender, EventArgs e)
         {
+            return;
+
             bool ovf = false;
 
             // Check if we've been unplugged
@@ -580,6 +590,86 @@ namespace QA350
         private void flashVirginDeviceToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Bootloader.EnterBootloader();
+        }
+
+        private void loggingToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (loggingToolStripMenuItem.Checked == false)  
+            {
+                
+                
+
+                SaveFileDialog sfd = new SaveFileDialog();
+                sfd.InitialDirectory = Constants.DataFilePath;
+                sfd.Filter ="Log Files|*.log";
+
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    loggingToolStripMenuItem.Checked = true;
+                    LoggingEnabled = true;
+                    LogFile = sfd.FileName;
+
+                    if (SlowUpdateBtn.On)
+                    {
+                        LogSpeed = LoggingSpeedEnum.Slow_2p5Hz;
+                        AcqTimer.Interval = 410;
+                    }
+                    else if (FastUpdateBtn.On)
+                    {
+                        LogSpeed = LoggingSpeedEnum.Fast_1KHz;
+                        AcqTimer.Interval = 10;
+                    }
+
+
+                }
+            }
+            else
+            {
+                loggingToolStripMenuItem.Checked = false;
+                LoggingEnabled = true;
+                LogFile = "";
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < 100; i++)
+            {
+                Stopwatch sw = Stopwatch.StartNew();
+                
+                while (Hardware.GetFifoDepth() < 12)
+                {
+                    sb.AppendLine("Sleep 2ms");
+                    Thread.Sleep(2);
+                }
+
+                StreamSample[] buffer1 = Hardware.ReadVoltageStream();
+                sw.Stop();
+                double elapsed1 = sw.Elapsed.TotalMilliseconds;
+
+                for (int j=0; j<buffer1.Length; j++)
+                {
+                    sb.AppendLine(string.Format("{0},{1}", buffer1[j].SequenceId, buffer1[j].Value));
+                }
+
+                sb.AppendLine("---");
+            }
+
+            Console.WriteLine(sb.ToString());
+
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            Stopwatch sw = Stopwatch.StartNew();
+            Hardware.KickLED();
+            //Hardware.KickLED();
+            //Hardware.HidIsConnected();
+            sw.Stop();
+            double elapsed1 = sw.Elapsed.TotalMilliseconds;
+            Console.WriteLine("Elapsed ms: " + elapsed1.ToString("0.00"));
         }
     }
 }

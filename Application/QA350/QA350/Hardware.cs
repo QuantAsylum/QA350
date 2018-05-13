@@ -8,6 +8,12 @@ using System.Threading.Tasks;
 
 namespace QA350
 {
+    class StreamSample
+    {
+        public byte SequenceId;
+        public Int32 Value;
+    }
+
     /// <summary>
     /// Class encapsulates hardware functionality of the QA350
     /// </summary>
@@ -75,7 +81,7 @@ namespace QA350
         /// </summary>
         static public void Close()
         {
-            if ((Msp430 != null) && (Msp430.IsConnected))
+            if (Msp430 != null)
             {
                 Msp430.CloseDevice();
                 IsConnected = false;
@@ -84,7 +90,7 @@ namespace QA350
 
         static public int GetFirmwareVersion()
         {
-            if ((Msp430 != null) && (Msp430.IsConnected))
+            if (Msp430 != null) 
             {
                 if (USBSendData(new byte[] { 0xFE, 0x00 }))
                 {
@@ -92,7 +98,7 @@ namespace QA350
 
                     if (USBRecvData(out buffer))
                     {
-                        return buffer[0];
+                        return buffer[3];
                     }
                 }
             }
@@ -107,7 +113,7 @@ namespace QA350
         /// <returns></returns>
         static public int ReadVoltageCounts()
         {
-            if ((Msp430 != null) && (Msp430.IsConnected))
+            if (Msp430 != null)
             {
                 // Read raw voltage by sending a two byte command. This will be received on the MSP430 as a
                 // 0x0001 command (read ADC)
@@ -117,17 +123,22 @@ namespace QA350
 
                     if (USBRecvData(out buffer))
                     {
-                        if ((buffer[2] & 0x80) > 0)
+                        // Data comes back as AA BB CC DD
+                        // AA = sequence number
+                        // BB = MSB of voltage reading
+                        // CC
+                        // DD = LSB of voltage reading
+                        if ((buffer[1] & 0x80) > 0)
                         {
                             // Sign extend
-                            buffer[3] = 0xff;
+                            buffer[0] = 0xff;   
                         }
                         else
                         {
-                            buffer[3] = 0;
+                            buffer[0] = 0;
                         }
 
-                        Int32 data = (buffer[3] << 24) + (buffer[2] << 16) + (buffer[1] << 8) + buffer[0];
+                        Int32 data = (buffer[0] << 24) + (buffer[1] << 16) + (buffer[2] << 8) + buffer[3];
                         return data;
                     }
                 }
@@ -138,13 +149,71 @@ namespace QA350
             return 0;
         }
 
+        static public int GetFifoDepth()
+        {
+            if (USBSendData(new byte[] { 0x05, 0x00 }))
+            {
+                byte[] buffer;
+
+                if (USBRecvData(out buffer))
+                {
+                    Int32 data = (buffer[0] << 24) + (buffer[1] << 16) + (buffer[2] << 8) + buffer[3];
+                    return data;
+                }
+            }
+
+            return 0;
+        }
+
+        static public StreamSample[] ReadVoltageStream()
+        {
+            StreamSample[] samples = new StreamSample[12];
+
+            if (Msp430 != null) 
+            {
+                if (USBSendData(new byte[] { 0x04, 0x00 }))
+                {
+                    byte[] wordBuf;
+
+                    if (USBRecvData(out wordBuf))
+                    {
+                        for (int i=0; i<wordBuf.Length; i+=4)
+                        {
+                            StreamSample sample = new StreamSample();
+                            sample.SequenceId = wordBuf[i + 0];
+
+                            if ((wordBuf[i+1] & 0x80) > 0)
+                            {
+                                // Sign extend
+                                wordBuf[i+0] = 0xff;
+                            }
+                            else
+                            {
+                                wordBuf[i+0] = 0;
+                            }
+
+                            Int32 data = (wordBuf[i+0] << 24) + (wordBuf[i+1] << 16) + (wordBuf[i+2] << 8) + wordBuf[i+3];
+                            sample.Value = data;
+                            samples[i >> 2] = sample;
+                        }
+
+                        return samples;
+                    }
+                }
+            }
+
+            IsConnected = false;
+
+            return null;
+        }
+
         /// <summary>
         /// Sets the attenuator on the device. 
         /// </summary>
         /// <param name="atten"></param>
         static public void SetAtten(int atten)
         {
-            if ((Msp430 != null) && (Msp430.IsConnected))
+            if (Msp430 != null) 
             {
                 USBSendData(new byte[] { 0x03, (byte)atten });
             }
@@ -155,7 +224,7 @@ namespace QA350
         /// </summary>
         static public void KickLED()
         {
-            if ((Msp430 != null) && (Msp430.IsConnected))
+            if (Msp430 != null)
             {
                 USBSendData(new byte[] { 0x00, 0x00 });
             }
@@ -182,14 +251,19 @@ namespace QA350
            
             Array.Copy(data, 0, frame, 2, data.Length);
 
-            bool retVal = Msp430.Write(frame, timeout);
+            bool retVal = Msp430.FastWrite(frame, timeout);
             return retVal;
 
         }
 
         /// <summary>
-        /// Receive data from USB device. The return value will always be a single 32-bit word, and the 
+        /// Receive data from USB device. The return value will always be 48 bytes, and the 
         /// data will only be sent if we request it via a command. There is no unsoliced data. 
+        /// First two bytes of HID buffer are TI's HID protcol:
+        /// Byte 0: 0x3F
+        ///      1: Length of user payload (0x30 = 48)
+        ///      2: First byte of user data
+        ///      49: Last byte of user data
         /// </summary>
         /// <param name="buffer"></param>
         /// <param name="len"></param>
@@ -198,7 +272,7 @@ namespace QA350
         {
             buffer = new byte[0];
 
-            HidDeviceData hdd = Msp430.Read(timeout);
+            HidDeviceData hdd = Msp430.FastRead(timeout);   
 
             if (hdd != null)
             {
@@ -210,5 +284,13 @@ namespace QA350
             else
                 return false;
         }
+        
+        // BUGBUG: Not needed diagnostics only. Pull it out
+        static public bool HidIsConnected()
+        {
+            return Msp430.IsConnected;
+        }
+
+       
     }
 }

@@ -98,5 +98,14 @@ uint16_t FifoCount()
 }
 
 
+void FifoClear()
+{
+	__disable_interrupt();
+	ReadPtr = 0;
+	WritePtr = 0;
+	__enable_interrupt();
+}
+
+
 
 

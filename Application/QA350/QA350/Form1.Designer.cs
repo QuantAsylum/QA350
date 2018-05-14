@@ -295,7 +295,7 @@
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 47;
-            this.button2.Text = "button2";
+            this.button2.Text = "Kick";
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
@@ -305,7 +305,7 @@
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 46;
-            this.button1.Text = "button1";
+            this.button1.Text = "Stream";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
@@ -510,7 +510,6 @@
             this.FastUpdateBtn.AllowAllOff = false;
             this.FastUpdateBtn.AllowFadeToOff = false;
             this.FastUpdateBtn.BackColor = System.Drawing.Color.Transparent;
-            this.FastUpdateBtn.Enabled = false;
             this.FastUpdateBtn.FillColor = System.Drawing.Color.Transparent;
             this.FastUpdateBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.FastUpdateBtn.GroupName = "UpdateRate";
@@ -527,6 +526,7 @@
             this.FastUpdateBtn.TabIndex = 30;
             this.FastUpdateBtn.TextWhenOff = "Fast";
             this.FastUpdateBtn.TextWhenOn = "Fast";
+            this.FastUpdateBtn.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.FastUpdateBtn_ButtonPressed);
             // 
             // SlowUpdateBtn
             // 
@@ -549,6 +549,7 @@
             this.SlowUpdateBtn.TabIndex = 29;
             this.SlowUpdateBtn.TextWhenOff = "Slow";
             this.SlowUpdateBtn.TextWhenOn = "Slow";
+            this.SlowUpdateBtn.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.SlowUpdateBtn_ButtonPressed);
             // 
             // lightedButton22
             // 

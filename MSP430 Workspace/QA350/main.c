@@ -445,6 +445,9 @@ void InitADS1256()
 	//WaitUntilDataReady();
 }
 
+//
+// Sample rate of 0 is slow, and 1 is fast
+//
 void SetADS1256SampleRate(uint8_t sampleRate)
 {
 	if (sampleRate == 0)
@@ -522,7 +525,7 @@ void main (void)
     DelayUS(5000);           // Safe number
     InitADS1256();
     DelayUS(5000);           // Safe number
-    SetADS1256SampleRate(1); // Set fast sample rate
+    SetADS1256SampleRate(0); // Set slow sample rate to match UI default
 
     USB_setup(TRUE, TRUE); // Init USB & events; if a host is present, connect
 
@@ -693,6 +696,11 @@ void ProcessUsbData()
 				// Send was successful
 
 			}
+			break;
+
+		case 6:
+			SetADS1256SampleRate(UsbBuffer[1]);
+			FifoClear();
 			break;
 
 		case 253:

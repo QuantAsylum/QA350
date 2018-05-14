@@ -8,6 +8,7 @@ uint8_t  FifoDataAvail();
 uint32_t FifoPop();
 uint32_t FifoPeekLastPushed();
 uint16_t FifoCount();
+void 	 FifoClear();
 
 
 

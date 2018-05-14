@@ -250,6 +250,8 @@ namespace QA350
 
                 toolStripStatusLabel1.Text = string.Format("Opened. (FW version = {0})", fwVersion.ToString());
                 SetLowRange();
+                SlowUpdateBtn.On = true;
+                SlowUpdateBtn_ButtonPressed(null, null);
 
                 LineItem line = new LineItem("", GraphData, Color.LimeGreen, SymbolType.None);
                 zedGraphControl1.GraphPane.CurveList.Add(line);
@@ -284,7 +286,7 @@ namespace QA350
         /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
-            return;
+            //return;
 
             if (Hardware.IsConnected)
             {
@@ -333,7 +335,7 @@ namespace QA350
         /// <param name="e"></param>
         private void AckTimer_Tick(object sender, EventArgs e)
         {
-            return;
+            //return;
 
             bool ovf = false;
 
@@ -365,6 +367,14 @@ namespace QA350
 
             // Subtract the user offset (usually zero)
             v = v - UserOffset;
+
+            // If we're at the fast sample rate, the equiv input impedance of the 
+            // ADS buffer drops from 80M to 20M. To compensate, we need to gain up
+            // the result
+            if (FastUpdateBtn.On)
+            {
+                v = v * 1.00988;
+            }
 
             // Save the last scaled and zero'd reading
             LastReading = v;
@@ -456,6 +466,9 @@ namespace QA350
 
         private void calibrateToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            SlowUpdateBtn.On = true;
+            SlowUpdateBtn_ButtonPressed(null, null);
+
             AcqTimer.Enabled = false;
 
             DlgCalibrate2 dlg = new DlgCalibrate2();
@@ -573,9 +586,7 @@ namespace QA350
                 return;
             }
 
-            // Force hardware to jump to BSL
-            if (Hardware.IsConnected)
-                Hardware.USBSendData(new byte[] { 0xFF, 0x00 });
+            Hardware.EnterBSL();
 
             // Enter bootloader
             Thread.Sleep(2000);
@@ -633,32 +644,35 @@ namespace QA350
 
         private void button1_Click(object sender, EventArgs e)
         {
-            StringBuilder sb = new StringBuilder();
-
-            for (int i = 0; i < 100; i++)
+            new Thread(() =>
             {
-                Stopwatch sw = Stopwatch.StartNew();
-                
-                while (Hardware.GetFifoDepth() < 12)
+                StringBuilder sb = new StringBuilder();
+
+                for (int i = 0; i < 100; i++)
                 {
-                    sb.AppendLine("Sleep 2ms");
-                    Thread.Sleep(2);
+                    Stopwatch sw = Stopwatch.StartNew();
+
+                    while (Hardware.GetFifoDepth() < 12)
+                    {
+                        sb.AppendLine("Sleep 5ms");
+                        Thread.Sleep(5);
+                    }
+
+                    StreamSample[] buffer1 = Hardware.ReadVoltageStream();
+                    sw.Stop();
+                    double elapsed1 = sw.Elapsed.TotalMilliseconds;
+
+                    for (int j = 0; j < buffer1.Length; j++)
+                    {
+                        sb.AppendLine(string.Format("{0},{1}", buffer1[j].SequenceId, buffer1[j].Value));
+                    }
+
+                    sb.AppendLine("---");
                 }
 
-                StreamSample[] buffer1 = Hardware.ReadVoltageStream();
-                sw.Stop();
-                double elapsed1 = sw.Elapsed.TotalMilliseconds;
-
-                for (int j=0; j<buffer1.Length; j++)
-                {
-                    sb.AppendLine(string.Format("{0},{1}", buffer1[j].SequenceId, buffer1[j].Value));
-                }
-
-                sb.AppendLine("---");
+                Console.WriteLine(sb.ToString());
             }
-
-            Console.WriteLine(sb.ToString());
-
+            ).Start();
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -670,6 +684,20 @@ namespace QA350
             sw.Stop();
             double elapsed1 = sw.Elapsed.TotalMilliseconds;
             Console.WriteLine("Elapsed ms: " + elapsed1.ToString("0.00"));
+        }
+
+        private void FastUpdateBtn_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
+        {
+            Hardware.SetSampleRate(SampleRate.Fast);
+            ResetStats();
+            AcqTimer.Interval = 50;
+        }
+
+        private void SlowUpdateBtn_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
+        {
+            Hardware.SetSampleRate(SampleRate.Slow);
+            ResetStats();
+            AcqTimer.Interval = 410;
         }
     }
 }

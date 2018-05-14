@@ -14,6 +14,8 @@ namespace QA350
         public Int32 Value;
     }
 
+    enum SampleRate { Slow, Fast};
+
     /// <summary>
     /// Class encapsulates hardware functionality of the QA350
     /// </summary>
@@ -27,6 +29,8 @@ namespace QA350
         static int timeout = 50;
 
         static public bool IsConnected = false;
+
+        static object UsbLockObj = new object();
 
         /// <summary>
         /// Attempt to open the USB connection to the QA350. If already
@@ -88,22 +92,32 @@ namespace QA350
             }
         }
 
-        static public int GetFirmwareVersion()
+        // Sends a two byte message, and receives a 48 byte buffer in return
+        static private int SendRecv(byte sendData)
         {
-            if (Msp430 != null) 
+            lock (UsbLockObj)
             {
-                if (USBSendData(new byte[] { 0xFE, 0x00 }))
+                if (Msp430 != null)
                 {
-                    byte[] buffer;
-
-                    if (USBRecvData(out buffer))
+                    if (USBSendData(new byte[] { sendData, 0x00 }))
                     {
-                        return buffer[3];
+                        byte[] buffer;
+
+                        if (USBRecvData(out buffer))
+                        {
+                            int data = unchecked((int)((buffer[0] << 24) + (buffer[1] << 16) + (buffer[2] << 8) + buffer[3]));
+                            return data;
+                        }
                     }
                 }
             }
 
-            return -1;
+            throw new Exception("USB Failure in Hardware.cs SendRecv");
+        }
+
+        static public int GetFirmwareVersion()
+        {
+            return SendRecv(0xFE);
         }
 
         /// <summary>
@@ -113,33 +127,54 @@ namespace QA350
         /// <returns></returns>
         static public int ReadVoltageCounts()
         {
-            if (Msp430 != null)
+            uint val = unchecked ((uint)SendRecv(0x1));
+
+            // Given a word AABBCCDD, the voltage is represented as a 24-bit value
+            // BBCCDD. We need to see if is negative or not (based on BB value) and 
+            // sign extend if it is
+            if ( ((val >> 16) & 0xFF) > 0x80)
             {
-                // Read raw voltage by sending a two byte command. This will be received on the MSP430 as a
-                // 0x0001 command (read ADC)
-                if (USBSendData(new byte[] { 0x01, 0x00 }))
+                // Sign extend
+                val |= 0xFF000000;
+            }
+            else
+            {
+                val &= 0x00FFFFFF;
+            }
+
+            return unchecked((int)val);
+
+            /*
+            lock (UsbLockObj)
+            {
+                if (Msp430 != null)
                 {
-                    byte[] buffer;
-
-                    if (USBRecvData(out buffer))
+                    // Read raw voltage by sending a two byte command. This will be received on the MSP430 as a
+                    // 0x0001 command (read ADC)
+                    if (USBSendData(new byte[] { 0x01, 0x00 }))
                     {
-                        // Data comes back as AA BB CC DD
-                        // AA = sequence number
-                        // BB = MSB of voltage reading
-                        // CC
-                        // DD = LSB of voltage reading
-                        if ((buffer[1] & 0x80) > 0)
-                        {
-                            // Sign extend
-                            buffer[0] = 0xff;   
-                        }
-                        else
-                        {
-                            buffer[0] = 0;
-                        }
+                        byte[] buffer;
 
-                        Int32 data = (buffer[0] << 24) + (buffer[1] << 16) + (buffer[2] << 8) + buffer[3];
-                        return data;
+                        if (USBRecvData(out buffer))
+                        {
+                            // Data comes back as AA BB CC DD
+                            // AA = sequence number
+                            // BB = MSB of voltage reading
+                            // CC
+                            // DD = LSB of voltage reading
+                            if ((buffer[1] & 0x80) > 0)
+                            {
+                                // Sign extend
+                                buffer[0] = 0xff;
+                            }
+                            else
+                            {
+                                buffer[0] = 0;
+                            }
+
+                            Int32 data = (buffer[0] << 24) + (buffer[1] << 16) + (buffer[2] << 8) + buffer[3];
+                            return data;
+                        }
                     }
                 }
             }
@@ -147,10 +182,13 @@ namespace QA350
             IsConnected = false;
 
             return 0;
+            */
         }
 
         static public int GetFifoDepth()
         {
+            return SendRecv(0x5);
+            /*
             if (USBSendData(new byte[] { 0x05, 0x00 }))
             {
                 byte[] buffer;
@@ -163,41 +201,45 @@ namespace QA350
             }
 
             return 0;
+            */
         }
 
         static public StreamSample[] ReadVoltageStream()
         {
             StreamSample[] samples = new StreamSample[12];
 
-            if (Msp430 != null) 
+            lock (UsbLockObj)
             {
-                if (USBSendData(new byte[] { 0x04, 0x00 }))
+                if (Msp430 != null)
                 {
-                    byte[] wordBuf;
-
-                    if (USBRecvData(out wordBuf))
+                    if (USBSendData(new byte[] { 0x04, 0x00 }))
                     {
-                        for (int i=0; i<wordBuf.Length; i+=4)
+                        byte[] wordBuf;
+
+                        if (USBRecvData(out wordBuf))
                         {
-                            StreamSample sample = new StreamSample();
-                            sample.SequenceId = wordBuf[i + 0];
-
-                            if ((wordBuf[i+1] & 0x80) > 0)
+                            for (int i = 0; i < wordBuf.Length; i += 4)
                             {
-                                // Sign extend
-                                wordBuf[i+0] = 0xff;
-                            }
-                            else
-                            {
-                                wordBuf[i+0] = 0;
+                                StreamSample sample = new StreamSample();
+                                sample.SequenceId = wordBuf[i + 0];
+
+                                if ((wordBuf[i + 1] & 0x80) > 0)
+                                {
+                                    // Sign extend
+                                    wordBuf[i + 0] = 0xff;
+                                }
+                                else
+                                {
+                                    wordBuf[i + 0] = 0;
+                                }
+
+                                Int32 data = (wordBuf[i + 0] << 24) + (wordBuf[i + 1] << 16) + (wordBuf[i + 2] << 8) + wordBuf[i + 3];
+                                sample.Value = data;
+                                samples[i >> 2] = sample;
                             }
 
-                            Int32 data = (wordBuf[i+0] << 24) + (wordBuf[i+1] << 16) + (wordBuf[i+2] << 8) + wordBuf[i+3];
-                            sample.Value = data;
-                            samples[i >> 2] = sample;
+                            return samples;
                         }
-
-                        return samples;
                     }
                 }
             }
@@ -213,9 +255,19 @@ namespace QA350
         /// <param name="atten"></param>
         static public void SetAtten(int atten)
         {
+            
             if (Msp430 != null) 
             {
                 USBSendData(new byte[] { 0x03, (byte)atten });
+            }
+        }
+
+        static public void SetSampleRate(SampleRate sr)
+        {
+            if (Msp430 != null)
+            {
+                byte val = (sr == SampleRate.Slow ? (byte)0 : (byte)1);
+                USBSendData(new byte[] { 0x06, val });
             }
         }
 
@@ -228,6 +280,13 @@ namespace QA350
             {
                 USBSendData(new byte[] { 0x00, 0x00 });
             }
+        }
+
+        static public void EnterBSL()
+        {
+            // Force hardware to jump to BSL
+            if (Msp430 != null)
+                Hardware.USBSendData(new byte[] { 0xFF, 0x00 });
         }
 
         /// <summary>

@@ -140,6 +140,7 @@
             0,
             0,
             0});
+            this.numericUpDown3.ValueChanged += new System.EventHandler(this.numericUpDown3_ValueChanged);
             // 
             // label2
             // 
@@ -177,6 +178,7 @@
             0,
             0,
             0});
+            this.numericUpDown2.ValueChanged += new System.EventHandler(this.numericUpDown2_ValueChanged);
             // 
             // label1
             // 
@@ -214,6 +216,7 @@
             0,
             0,
             0});
+            this.numericUpDown1.ValueChanged += new System.EventHandler(this.numericUpDown1_ValueChanged);
             // 
             // radioButton3
             // 
@@ -310,6 +313,7 @@
             0,
             0,
             0});
+            this.numericUpDown4.ValueChanged += new System.EventHandler(this.numericUpDown4_ValueChanged);
             // 
             // label5
             // 
@@ -347,6 +351,7 @@
             0,
             0,
             0});
+            this.numericUpDown5.ValueChanged += new System.EventHandler(this.numericUpDown5_ValueChanged);
             // 
             // radioButton4
             // 
@@ -373,7 +378,7 @@
             // button4
             // 
             this.button4.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.button4.Location = new System.Drawing.Point(303, 511);
+            this.button4.Location = new System.Drawing.Point(257, 475);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(75, 23);
             this.button4.TabIndex = 10;
@@ -432,7 +437,7 @@
             // button5
             // 
             this.button5.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.button5.Location = new System.Drawing.Point(387, 511);
+            this.button5.Location = new System.Drawing.Point(341, 475);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(75, 23);
             this.button5.TabIndex = 12;
@@ -443,7 +448,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(687, 561);
+            this.ClientSize = new System.Drawing.Size(687, 516);
             this.Controls.Add(this.button5);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.button4);
@@ -451,6 +456,7 @@
             this.Controls.Add(this.groupBox1);
             this.Name = "DlgEditStats";
             this.Text = "DlgEditStats";
+            this.Load += new System.EventHandler(this.DlgEditStats_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).EndInit();

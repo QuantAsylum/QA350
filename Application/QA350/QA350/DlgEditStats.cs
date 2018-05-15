@@ -14,6 +14,8 @@ namespace QA350
     {
         public Settings AppSettings;
 
+        private bool NumericIgnoreUpdates = false;
+
         public DlgEditStats()
         {
             InitializeComponent();
@@ -22,11 +24,14 @@ namespace QA350
         public DlgEditStats(Settings settings) : this()
         {
             AppSettings = settings;
+        }
 
+        private void DlgEditStats_Load(object sender, EventArgs e)
+        {
             if (AppSettings.YAxisIsPPM)
                 radioButton1.Checked = true;
             if (AppSettings.YAxisIsMV)
-                radioButton1.Checked = true;
+                radioButton2.Checked = true;
             if (AppSettings.YAxisIsUV)
                 radioButton3.Checked = true;
 
@@ -35,6 +40,7 @@ namespace QA350
             if (AppSettings.HistoBinIsUV)
                 radioButton4.Checked = true;
 
+            NumericIgnoreUpdates = true;
             numericUpDown1.Value = Convert.ToDecimal(AppSettings.YAxisPPMperDiv);
             numericUpDown2.Value = Convert.ToDecimal(AppSettings.YAxisMVperDiv);
             numericUpDown3.Value = Convert.ToDecimal(AppSettings.YAxisUVPerDiv);
@@ -43,9 +49,10 @@ namespace QA350
             numericUpDown5.Value = Convert.ToDecimal(AppSettings.HistoBinInMV);
 
             numericUpDown6.Value = Convert.ToDecimal(AppSettings.SampleHistory);
-
+            NumericIgnoreUpdates = false;
         }
 
+        // OK button
         private void button4_Click(object sender, EventArgs e)
         {
             AppSettings.YAxisIsPPM = false;
@@ -85,6 +92,9 @@ namespace QA350
             AppSettings.YAxisIsUV = false;
 
             AppSettings.YAxisPPMperDiv = 10;
+
+            radioButton1.Checked = true;
+            numericUpDown1.Value = Convert.ToDecimal(10);
         }
 
         // Set to 10 uV/div
@@ -96,6 +106,9 @@ namespace QA350
 
             AppSettings.YAxisUVPerDiv = 10;
 
+            radioButton3.Checked = true;
+            numericUpDown3.Value = Convert.ToDecimal(10);
+
         }
 
         // Set histo to 10uV/bin
@@ -105,6 +118,39 @@ namespace QA350
             AppSettings.HistoBinIsUV = true;
 
             AppSettings.YAxisUVPerDiv = 10;
+
+            radioButton4.Checked = true;
+            numericUpDown4.Value = Convert.ToDecimal(10);
+        }
+
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+            if (NumericIgnoreUpdates == false)
+                radioButton1.Checked = true;
+        }
+
+        private void numericUpDown2_ValueChanged(object sender, EventArgs e)
+        {
+            if (NumericIgnoreUpdates == false)
+                radioButton2.Checked = true;
+        }
+
+        private void numericUpDown3_ValueChanged(object sender, EventArgs e)
+        {
+            if (NumericIgnoreUpdates == false)
+                radioButton3.Checked = true;
+        }
+
+        private void numericUpDown5_ValueChanged(object sender, EventArgs e)
+        {
+            if (NumericIgnoreUpdates == false)
+                radioButton5.Checked = true;
+        }
+
+        private void numericUpDown4_ValueChanged(object sender, EventArgs e)
+        {
+            if (NumericIgnoreUpdates == false)
+                radioButton4.Checked = true;
         }
     }
 }

@@ -588,7 +588,7 @@ namespace QA350
         {
             DlgEditStats dlg = new DlgEditStats(AppSettings);
 
-            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (dlg.ShowDialog() == DialogResult.OK)
             {
                 ResetStats();
                 AppSettings = dlg.AppSettings;

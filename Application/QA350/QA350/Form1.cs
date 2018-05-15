@@ -136,6 +136,7 @@ namespace QA350
 
             // Indicate we are NOT in relative mode by hiding the label
             RelModeLabel.Visible = false;
+            LoggingLabel.Visible = false;
 
             LoadFontData();
 
@@ -151,6 +152,12 @@ namespace QA350
         /// <param name="e"></param>
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            if (LoggingEnabled)
+            {
+                LoggingEnabled = false;
+                Thread.Sleep(1000);
+            }
+
             try
             {
                 File.WriteAllText(Constants.CalibrationFile, SerDes.Serialize(CalData));                
@@ -249,6 +256,7 @@ namespace QA350
                 }
 
                 toolStripStatusLabel1.Text = string.Format("Opened. (FW version = {0})", fwVersion.ToString());
+                loggingToolStripMenuItem.Enabled = true;
                 SetLowRange();
                 SlowUpdateBtn.On = true;
                 SlowUpdateBtn_ButtonPressed(null, null);
@@ -262,6 +270,19 @@ namespace QA350
                 toolStripStatusLabel1.Text = "Open failed...please plug in QA350";
                 AcqTimer.Enabled = false; 
             }
+        }
+
+        /// <summary>
+        /// If any failure is detected at the application level, then this function 
+        /// should be called. 
+        /// </summary>
+        private void ConnectionLost()
+        {
+            Hardware.IsConnected = false;
+            AcqTimer.Enabled = false;
+            label3.Text = "--CONNECTING--";
+            toolStripStatusLabel1.Text = "Disconnected...please plug in QA350";
+            loggingToolStripMenuItem.Enabled = false;
         }
 
         private void SetLowRange()
@@ -286,8 +307,6 @@ namespace QA350
         /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
-            //return;
-
             if (Hardware.IsConnected)
             {
                 Hardware.KickLED();
@@ -295,6 +314,17 @@ namespace QA350
             else
             {
                 TryConnect();
+            }
+
+            if (LoggingEnabled)
+            {
+                LoggingLabel.Visible = true;
+                loggingToolStripMenuItem.Checked = true;
+            }
+            else
+            {
+                LoggingLabel.Visible = false;
+                loggingToolStripMenuItem.Checked = false;
             }
         }
 
@@ -340,41 +370,24 @@ namespace QA350
             bool ovf = false;
 
             // Check if we've been unplugged
-            if (Hardware.IsConnected == false)
+            try
             {
-                AcqTimer.Enabled = false;
-                label3.Text = "--CONNECTING--";
-                return;
-            }
+                if (Hardware.IsConnected == false)
+                {
+                    ConnectionLost();
+                    return;
+                }
 
-            // Read the raw counts
-            RawDataCounts = Hardware.ReadVoltageCounts();
+                // Read the raw counts
+                RawDataCounts = Hardware.ReadVoltageCounts();
+            }
+            catch
+            {
+                ConnectionLost();
+            }
 
             // Convert counts to voltage.  
-            double v;
-            if (IsLowRange)
-            {
-                v = ComputeUncalibratedVoltage(RawDataCounts - CalData.LowRangeCountsOffset);
-                v = v * CalData.LowRangeGain;
-                if (v > 5) ovf = true;
-            }
-            else
-            {
-                v = ComputeUncalibratedVoltage(RawDataCounts - CalData.HiRangeCountsOffset);
-                v = v * CalData.HiRangeGain;
-                if (v > 50) ovf = true;
-            }
-
-            // Subtract the user offset (usually zero)
-            v = v - UserOffset;
-
-            // If we're at the fast sample rate, the equiv input impedance of the 
-            // ADS buffer drops from 80M to 20M. To compensate, we need to gain up
-            // the result
-            if (FastUpdateBtn.On)
-            {
-                v = v * 1.00988;
-            }
+            double v = ConvertCountsToVoltage(RawDataCounts, ref ovf);
 
             // Save the last scaled and zero'd reading
             LastReading = v;
@@ -429,7 +442,7 @@ namespace QA350
                 }
                 else
                 {
-                    zedGraphControl1.GraphPane.Title.Text = string.Format("{0}V per div\nMean={1}V Span={2:0}sec", GetYAxisPerDiv(avg).ToEngineeringNotation("0.000"), 
+                    zedGraphControl1.GraphPane.Title.Text = string.Format("{0}V per div\nMean={1}V Span={2:0}sec", GetYAxisPerDiv(avg).ToEngineeringNotation("0.000"),
                         avg.ToEngineeringNotation("0.000"), spanSec);
                     zedGraphControl1.GraphPane.YAxis.Scale.MajorStep = GetYAxisPerDiv(avg);
                     zedGraphControl1.GraphPane.YAxis.Scale.Max = avg + GetYAxisPerDiv(avg) * 5;
@@ -444,6 +457,42 @@ namespace QA350
                 Histogram h = new Histogram(Readings, GetBinSize(), AppSettings.BinCount);
                 h.Plot(zedGraphControl2);
             }
+        }
+
+        private double ConvertCountsToVoltage(int counts, ref bool ovf)
+        {
+            double v;
+            if (IsLowRange)
+            {
+                v = ComputeUncalibratedVoltage(counts - CalData.LowRangeCountsOffset);
+                v = v * CalData.LowRangeGain;
+                if (v > 5) ovf = true;
+            }
+            else
+            {
+                v = ComputeUncalibratedVoltage(counts - CalData.HiRangeCountsOffset);
+                v = v * CalData.HiRangeGain;
+                if (v > 50) ovf = true;
+            }
+
+            // Subtract the user offset (usually zero)
+            v = v - UserOffset;
+
+            // If we're at the fast sample rate, the equiv input impedance of the 
+            // ADS buffer drops from 80M to 20M. To compensate, we need to gain up
+            // the result. Note that top R of divider is 240K, and lower R is 
+            // 260K. The 80M or 20M is paralleled with the 260K. The math is as follows
+            // (260K || 80M) / ( (260K || 80M) + 240K)  = 0.479252
+            // (260K || 20M) / ( (260K || 20M) + 240K)  = 0.477023
+            // This is a ratio of 1.00467. However, emperically we determine that
+            // 1.00988 gives better agreement. The correct solution here is to calibrate 
+            // for both in a future update.
+            if (LogSpeed == LoggingSpeedEnum.Fast_1KHz)
+            {
+                v = v * 1.00988;
+            }
+
+            return v;
         }
 
         // Reset stats button
@@ -546,23 +595,6 @@ namespace QA350
             }
         }
 
-        //asdf
-
-        //private void button1_Click(object sender, EventArgs e)
-        //{
-        //    AcqTimer.Enabled = false;
-        //    LEDKickerTimer.Enabled = false;
-        //    Bootloader.EnterBootloader();
-        //}
-
-        //asdf
-
-        //private void button2_Click(object sender, EventArgs e)
-        //{
-        //    if (Hardware.IsConnected)
-        //        Hardware.USBSendData(new byte[] { 0xFF, 0x00 });
-        //}
-
         private void closeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Close();
@@ -605,14 +637,11 @@ namespace QA350
 
         private void loggingToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (loggingToolStripMenuItem.Checked == false)  
+            if (loggingToolStripMenuItem.Checked == false)
             {
-                
-                
-
                 SaveFileDialog sfd = new SaveFileDialog();
                 sfd.InitialDirectory = Constants.DataFilePath;
-                sfd.Filter ="Log Files|*.log";
+                sfd.Filter = "Log Files|*.log";
 
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
@@ -623,67 +652,132 @@ namespace QA350
                     if (SlowUpdateBtn.On)
                     {
                         LogSpeed = LoggingSpeedEnum.Slow_2p5Hz;
-                        AcqTimer.Interval = 410;
                     }
                     else if (FastUpdateBtn.On)
                     {
                         LogSpeed = LoggingSpeedEnum.Fast_1KHz;
-                        AcqTimer.Interval = 10;
                     }
 
+                    new Thread(LoggingThread).Start();
 
+                    // While logging, the logging speed cannot be changed
+                    SlowUpdateBtn.Enabled = false;
+                    FastUpdateBtn.Enabled = false;
                 }
             }
             else
             {
                 loggingToolStripMenuItem.Checked = false;
-                LoggingEnabled = true;
-                LogFile = "";
+                LoggingEnabled = false;
+                SlowUpdateBtn.Enabled = true;
+                FastUpdateBtn.Enabled = true;
             }
+        }
+
+        private void LoggingThread()
+        {
+            double dt;
+            int sample = 0;
+            byte LastSequence = 0;
+            bool firstRead = true;
+
+            Debug.WriteLine("Logging thread started");
+
+            FileStream fs = null;
+            StreamWriter sw = null;
+
+            try
+            {
+                switch (LogSpeed)
+                {
+                    case LoggingSpeedEnum.Fast_1KHz:
+                        dt = 1e-3;
+                        break;
+                    case LoggingSpeedEnum.Slow_2p5Hz:
+                        dt = 400e-3;
+                        break;
+                    default:
+                        throw new InvalidEnumArgumentException("LoggingThread in Form1.cs");
+                }
+
+                fs = new FileStream(LogFile, FileMode.Create, FileAccess.Write);
+                sw = new StreamWriter(fs);
+
+                sw.WriteLine("# Data acquired {0} {1}", DateTime.Now.ToShortDateString(), DateTime.Now.ToShortTimeString());
+                sw.WriteLine("# Sample Rate: " + LogSpeed.ToString());
+
+                while (LoggingEnabled)
+                {
+                    StreamSample[] buffer = new StreamSample[0];
+                    try
+                    {
+                        while (Hardware.GetFifoDepth() < 12)
+                        {
+                            Thread.Sleep(5);
+                        }
+
+                        buffer = Hardware.ReadVoltageStream();
+                    }
+                    catch
+                    {
+                        break;
+                    }
+
+                    // Sync the sequence ID on the first read
+                    if (firstRead)
+                    {
+                        firstRead = false;
+
+                        LastSequence = (byte)(buffer[0].SequenceId - (byte)1);
+                    }
+
+                    if (buffer.Length == 0)
+                    {
+                        break;
+                    }
+
+                    while (LastSequence + 1 != buffer[0].SequenceId)
+                    {
+                        sw.WriteLine("+,{0},0", sample++ * dt);
+                        ++LastSequence;
+                    }
+
+                    for (int i = 0; i < buffer.Length; i++)
+                    {
+                        bool ovf = false;
+                        sw.WriteLine("-,{0:0.000},{1:N6}", sample++ * dt, ConvertCountsToVoltage(buffer[i].Value, ref ovf));
+                        LastSequence = buffer[i].SequenceId;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Logging has stopped: " + ex.Message);
+            }
+        
+            if (sw != null)
+            {
+                sw.Flush();
+                sw.Close();
+            }
+
+            if (fs != null)
+            {
+                fs.Close();
+            }
+
+            LoggingEnabled = false;
+            Debug.WriteLine("Logging thread exited");
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            new Thread(() =>
-            {
-                StringBuilder sb = new StringBuilder();
-
-                for (int i = 0; i < 100; i++)
-                {
-                    Stopwatch sw = Stopwatch.StartNew();
-
-                    while (Hardware.GetFifoDepth() < 12)
-                    {
-                        sb.AppendLine("Sleep 5ms");
-                        Thread.Sleep(5);
-                    }
-
-                    StreamSample[] buffer1 = Hardware.ReadVoltageStream();
-                    sw.Stop();
-                    double elapsed1 = sw.Elapsed.TotalMilliseconds;
-
-                    for (int j = 0; j < buffer1.Length; j++)
-                    {
-                        sb.AppendLine(string.Format("{0},{1}", buffer1[j].SequenceId, buffer1[j].Value));
-                    }
-
-                    sb.AppendLine("---");
-                }
-
-                Console.WriteLine(sb.ToString());
-            }
-            ).Start();
+           
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            Stopwatch sw = Stopwatch.StartNew();
-            Hardware.KickLED();
-            //Hardware.KickLED();
-            //Hardware.HidIsConnected();
-            sw.Stop();
-            double elapsed1 = sw.Elapsed.TotalMilliseconds;
-            Console.WriteLine("Elapsed ms: " + elapsed1.ToString("0.00"));
+           
         }
 
         private void FastUpdateBtn_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)

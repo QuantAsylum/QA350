@@ -51,8 +51,6 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.button2 = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
             this.RelModeLabel = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
@@ -68,6 +66,7 @@
             this.FastUpdateBtn = new LightedButton2.LightedButton2();
             this.SlowUpdateBtn = new LightedButton2.LightedButton2();
             this.lightedButton22 = new LightedButton2.LightedButton2();
+            this.LoggingLabel = new System.Windows.Forms.Label();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -192,6 +191,7 @@
             // 
             // loggingToolStripMenuItem
             // 
+            this.loggingToolStripMenuItem.Enabled = false;
             this.loggingToolStripMenuItem.Name = "loggingToolStripMenuItem";
             this.loggingToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
             this.loggingToolStripMenuItem.Text = "Logging";
@@ -259,8 +259,7 @@
             // 
             this.panel1.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("panel1.BackgroundImage")));
             this.panel1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
-            this.panel1.Controls.Add(this.button2);
-            this.panel1.Controls.Add(this.button1);
+            this.panel1.Controls.Add(this.LoggingLabel);
             this.panel1.Controls.Add(this.RelModeLabel);
             this.panel1.Controls.Add(this.label11);
             this.panel1.Controls.Add(this.label5);
@@ -288,26 +287,6 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(847, 445);
             this.panel1.TabIndex = 39;
-            // 
-            // button2
-            // 
-            this.button2.Location = new System.Drawing.Point(405, 140);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(75, 23);
-            this.button2.TabIndex = 47;
-            this.button2.Text = "Kick";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
-            // 
-            // button1
-            // 
-            this.button1.Location = new System.Drawing.Point(479, 114);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 46;
-            this.button1.Text = "Stream";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // RelModeLabel
             // 
@@ -574,6 +553,17 @@
             this.lightedButton22.TextWhenOn = "Reset";
             this.lightedButton22.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.lightedButton22_ButtonPressed);
             // 
+            // LoggingLabel
+            // 
+            this.LoggingLabel.AutoSize = true;
+            this.LoggingLabel.BackColor = System.Drawing.Color.Transparent;
+            this.LoggingLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.LoggingLabel.Location = new System.Drawing.Point(556, 114);
+            this.LoggingLabel.Name = "LoggingLabel";
+            this.LoggingLabel.Size = new System.Drawing.Size(85, 20);
+            this.LoggingLabel.TabIndex = 46;
+            this.LoggingLabel.Text = "LOGGING";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -641,8 +631,7 @@
         private System.Windows.Forms.Label RelModeLabel;
         private System.Windows.Forms.ToolStripMenuItem flashVirginDeviceToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loggingToolStripMenuItem;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Label LoggingLabel;
     }
 }
 

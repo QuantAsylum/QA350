@@ -117,7 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="label8.Text" xml:space="preserve">
-    <value>Displayed values will be multiplied by the indicated math value. For example, if you were mreasuring 0.5V and the math value was 10, then the displayed value would be 5V. This is useful if you are using external hardware to scale readings. </value>
-  </data>
 </root>

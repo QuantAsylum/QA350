@@ -51,6 +51,11 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.label12 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.Label_1ksps = new System.Windows.Forms.Label();
+            this.Label_2p5sps = new System.Windows.Forms.Label();
+            this.LoggingLabel = new System.Windows.Forms.Label();
             this.RelModeLabel = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
@@ -66,7 +71,8 @@
             this.FastUpdateBtn = new LightedButton2.LightedButton2();
             this.SlowUpdateBtn = new LightedButton2.LightedButton2();
             this.lightedButton22 = new LightedButton2.LightedButton2();
-            this.LoggingLabel = new System.Windows.Forms.Label();
+            this.analysisToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.analyzeLogToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -90,9 +96,9 @@
             this.label3.Font = new System.Drawing.Font("Courier New", 36F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label3.Location = new System.Drawing.Point(43, 61);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(429, 54);
+            this.label3.Size = new System.Drawing.Size(313, 54);
             this.label3.TabIndex = 10;
-            this.label3.Text = "--CONNECTING--";
+            this.label3.Text = "CONNECT...";
             // 
             // zedGraphControl1
             // 
@@ -172,6 +178,7 @@
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
             this.calibrateToolStripMenuItem,
+            this.analysisToolStripMenuItem,
             this.toolsToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
@@ -259,6 +266,10 @@
             // 
             this.panel1.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("panel1.BackgroundImage")));
             this.panel1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.panel1.Controls.Add(this.label12);
+            this.panel1.Controls.Add(this.label4);
+            this.panel1.Controls.Add(this.Label_1ksps);
+            this.panel1.Controls.Add(this.Label_2p5sps);
             this.panel1.Controls.Add(this.LoggingLabel);
             this.panel1.Controls.Add(this.RelModeLabel);
             this.panel1.Controls.Add(this.label11);
@@ -288,12 +299,67 @@
             this.panel1.Size = new System.Drawing.Size(847, 445);
             this.panel1.TabIndex = 39;
             // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.BackColor = System.Drawing.Color.Transparent;
+            this.label12.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label12.Location = new System.Drawing.Point(419, 78);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(45, 20);
+            this.label12.TabIndex = 50;
+            this.label12.Text = "Volts";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.BackColor = System.Drawing.Color.Transparent;
+            this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label4.Location = new System.Drawing.Point(614, 73);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(54, 20);
+            this.label4.TabIndex = 49;
+            this.label4.Text = "MATH";
+            // 
+            // Label_1ksps
+            // 
+            this.Label_1ksps.AutoSize = true;
+            this.Label_1ksps.BackColor = System.Drawing.Color.Transparent;
+            this.Label_1ksps.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Label_1ksps.Location = new System.Drawing.Point(601, 119);
+            this.Label_1ksps.Name = "Label_1ksps";
+            this.Label_1ksps.Size = new System.Drawing.Size(64, 20);
+            this.Label_1ksps.TabIndex = 48;
+            this.Label_1ksps.Text = "1 KSPS";
+            // 
+            // Label_2p5sps
+            // 
+            this.Label_2p5sps.AutoSize = true;
+            this.Label_2p5sps.BackColor = System.Drawing.Color.Transparent;
+            this.Label_2p5sps.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Label_2p5sps.Location = new System.Drawing.Point(520, 119);
+            this.Label_2p5sps.Name = "Label_2p5sps";
+            this.Label_2p5sps.Size = new System.Drawing.Size(67, 20);
+            this.Label_2p5sps.TabIndex = 47;
+            this.Label_2p5sps.Text = "2.5 SPS";
+            // 
+            // LoggingLabel
+            // 
+            this.LoggingLabel.AutoSize = true;
+            this.LoggingLabel.BackColor = System.Drawing.Color.Transparent;
+            this.LoggingLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.LoggingLabel.Location = new System.Drawing.Point(556, 93);
+            this.LoggingLabel.Name = "LoggingLabel";
+            this.LoggingLabel.Size = new System.Drawing.Size(85, 20);
+            this.LoggingLabel.TabIndex = 46;
+            this.LoggingLabel.Text = "LOGGING";
+            // 
             // RelModeLabel
             // 
             this.RelModeLabel.AutoSize = true;
             this.RelModeLabel.BackColor = System.Drawing.Color.Transparent;
             this.RelModeLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.RelModeLabel.Location = new System.Drawing.Point(556, 81);
+            this.RelModeLabel.Location = new System.Drawing.Point(520, 73);
             this.RelModeLabel.Name = "RelModeLabel";
             this.RelModeLabel.Size = new System.Drawing.Size(88, 20);
             this.RelModeLabel.TabIndex = 45;
@@ -303,9 +369,9 @@
             // 
             this.label11.BackColor = System.Drawing.Color.Transparent;
             this.label11.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label11.Location = new System.Drawing.Point(584, 145);
+            this.label11.Location = new System.Drawing.Point(566, 145);
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(95, 30);
+            this.label11.Size = new System.Drawing.Size(113, 30);
             this.label11.TabIndex = 44;
             this.label11.Text = "1";
             this.label11.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -315,7 +381,7 @@
             this.label5.AutoSize = true;
             this.label5.BackColor = System.Drawing.Color.Transparent;
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label5.Location = new System.Drawing.Point(556, 151);
+            this.label5.Location = new System.Drawing.Point(538, 151);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(31, 20);
             this.label5.TabIndex = 43;
@@ -326,7 +392,7 @@
             this.UncalLabel.AutoSize = true;
             this.UncalLabel.BackColor = System.Drawing.Color.Transparent;
             this.UncalLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.UncalLabel.Location = new System.Drawing.Point(531, 61);
+            this.UncalLabel.Location = new System.Drawing.Point(531, 53);
             this.UncalLabel.Name = "UncalLabel";
             this.UncalLabel.Size = new System.Drawing.Size(134, 20);
             this.UncalLabel.TabIndex = 42;
@@ -337,7 +403,7 @@
             this.label10.BackColor = System.Drawing.Color.Transparent;
             this.label10.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label10.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.label10.Location = new System.Drawing.Point(442, 145);
+            this.label10.Location = new System.Drawing.Point(424, 145);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(118, 30);
             this.label10.TabIndex = 41;
@@ -553,16 +619,20 @@
             this.lightedButton22.TextWhenOn = "Reset";
             this.lightedButton22.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.lightedButton22_ButtonPressed);
             // 
-            // LoggingLabel
+            // analysisToolStripMenuItem
             // 
-            this.LoggingLabel.AutoSize = true;
-            this.LoggingLabel.BackColor = System.Drawing.Color.Transparent;
-            this.LoggingLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.LoggingLabel.Location = new System.Drawing.Point(556, 114);
-            this.LoggingLabel.Name = "LoggingLabel";
-            this.LoggingLabel.Size = new System.Drawing.Size(85, 20);
-            this.LoggingLabel.TabIndex = 46;
-            this.LoggingLabel.Text = "LOGGING";
+            this.analysisToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.analyzeLogToolStripMenuItem});
+            this.analysisToolStripMenuItem.Name = "analysisToolStripMenuItem";
+            this.analysisToolStripMenuItem.Size = new System.Drawing.Size(62, 20);
+            this.analysisToolStripMenuItem.Text = "Analysis";
+            // 
+            // analyzeLogToolStripMenuItem
+            // 
+            this.analyzeLogToolStripMenuItem.Name = "analyzeLogToolStripMenuItem";
+            this.analyzeLogToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.analyzeLogToolStripMenuItem.Text = "Analyze Log";
+            this.analyzeLogToolStripMenuItem.Click += new System.EventHandler(this.analyzeLogToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -632,6 +702,12 @@
         private System.Windows.Forms.ToolStripMenuItem flashVirginDeviceToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loggingToolStripMenuItem;
         private System.Windows.Forms.Label LoggingLabel;
+        private System.Windows.Forms.Label Label_1ksps;
+        private System.Windows.Forms.Label Label_2p5sps;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.ToolStripMenuItem analysisToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem analyzeLogToolStripMenuItem;
     }
 }
 

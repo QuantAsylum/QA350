@@ -29,5 +29,9 @@ namespace QA350
 
         // Time
         public int SampleHistory = 100;
+
+        // Math
+        public double Math = 1;
+        public string MathLabel = "";
     }
 }

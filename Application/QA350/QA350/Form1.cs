@@ -37,12 +37,6 @@ namespace QA350
         /// </summary>
         int RawDataCounts;
 
-
-        /// <summary>
-        /// Last raw voltage reading. This is the unadjusted voltage measured at the input pins of the ADC
-        /// </summary>
-        //double LastRawReading;
-
         /// <summary>
         /// Last reading. This has gain and offset adjustments applied.
         /// </summary>
@@ -70,8 +64,8 @@ namespace QA350
         Font LCDFontSmall;
 
         // Log file
-        enum LoggingSpeedEnum { Fast_1KHz, Slow_2p5Hz}
-        LoggingSpeedEnum LogSpeed = LoggingSpeedEnum.Slow_2p5Hz;
+        enum SampleRateEnum { Fast_1KHz, Slow_2p5Hz}
+        SampleRateEnum SampleRate = SampleRateEnum.Slow_2p5Hz;
         bool LoggingEnabled = false;
         string LogFile = "";
 
@@ -84,8 +78,13 @@ namespace QA350
         {
             This = this;
             InitializeComponent();
-            //HW = new Hardware();
+        }
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
+#if !DEBUG
+            flashVirginDeviceToolStripMenuItem.Visible = false;
+#endif
             if (File.Exists(Constants.SettingsFile))
             {
                 // There's a settings file here. See if we can load it
@@ -100,13 +99,12 @@ namespace QA350
                     File.Delete(Constants.SettingsFile);
                 }
             }
-        }
 
-        private void Form1_Load(object sender, EventArgs e)
-        {
-#if !DEBUG
-            flashVirginDeviceToolStripMenuItem.Visible = false;
-#endif
+            // Never want this to persist. Too confusing
+            AppSettings.Math = 1.0;
+            AppSettings.MathLabel = "";
+            label12.Visible = false;
+
             TryConnect();
 
             // If needed directories aren't present, create them
@@ -137,6 +135,11 @@ namespace QA350
             // Indicate we are NOT in relative mode by hiding the label
             RelModeLabel.Visible = false;
             LoggingLabel.Visible = false;
+
+            Label_2p5sps.Visible = true;
+            Label_1ksps.Visible = false;
+
+            SampleRate = SampleRateEnum.Slow_2p5Hz;
 
             LoadFontData();
 
@@ -177,6 +180,20 @@ namespace QA350
             }
 
             Hardware.Close();
+        }
+
+
+        private double GetSampleRate()
+        {
+            switch (SampleRate)
+            {
+                case SampleRateEnum.Fast_1KHz:
+                    return 1000;
+                case SampleRateEnum.Slow_2p5Hz:
+                    return 2.5;
+                default:
+                    throw new NotImplementedException("GetSampleRate in Form1.cs");
+            }
         }
 
         /// <summary>
@@ -258,8 +275,9 @@ namespace QA350
                 toolStripStatusLabel1.Text = string.Format("Opened. (FW version = {0})", fwVersion.ToString());
                 loggingToolStripMenuItem.Enabled = true;
                 SetLowRange();
+
+                SetSampleRate(SampleRateEnum.Slow_2p5Hz);
                 SlowUpdateBtn.On = true;
-                SlowUpdateBtn_ButtonPressed(null, null);
 
                 LineItem line = new LineItem("", GraphData, Color.LimeGreen, SymbolType.None);
                 zedGraphControl1.GraphPane.CurveList.Add(line);
@@ -285,6 +303,9 @@ namespace QA350
             loggingToolStripMenuItem.Enabled = false;
         }
 
+        /// <summary>
+        /// Sets +/-5V range
+        /// </summary>
         private void SetLowRange()
         {
             IsLowRange = true;
@@ -292,6 +313,9 @@ namespace QA350
             ResetStats();
         }
 
+        /// <summary>
+        /// Sets +/- 50V range
+        /// </summary>
         private void SetHighRange()
         {
             IsLowRange = false;
@@ -316,6 +340,7 @@ namespace QA350
                 TryConnect();
             }
 
+            // If logging fails, it will be updated to the user here
             if (LoggingEnabled)
             {
                 LoggingLabel.Visible = true;
@@ -357,9 +382,8 @@ namespace QA350
             zedGraphControl2.Invalidate();
         }
 
-        int totalReads;
         /// <summary>
-        /// This timer runs slightly slower than the sample rate
+        /// Timer tick runs at either fast or slow rate to update collected data
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -388,6 +412,17 @@ namespace QA350
 
             // Convert counts to voltage.  
             double v = ConvertCountsToVoltage(RawDataCounts, ref ovf);
+
+            if (AppSettings.Math != 1)
+            {
+                label4.Visible = true;
+                label12.Visible = true;
+            }
+            else
+            {
+                label4.Visible = false;
+                label12.Visible = false;
+            }
 
             // Save the last scaled and zero'd reading
             LastReading = v;
@@ -422,14 +457,27 @@ namespace QA350
             }
 
             label3.Text = displayString;
-            ++totalReads;
 
+            // Add the new point
+            double period = 1 / GetSampleRate();
             GraphData.Add(DateTime.Now.Subtract(StartTime).TotalSeconds, v);
+
+            // Remove the old points
+            while (GraphData.Count > Readings.Count )
+            { 
+                GraphData.RemoveAt(0);
+            }
 
             if (Readings.Count > 0)
             {
                 double avg = Readings.Average();
-                double spanSec = DateTime.Now.Subtract(StartTime).TotalSeconds;
+
+                double spanSec = 0;
+
+                if (GraphData.Count > 1)
+                {
+                    spanSec = GraphData.Last().X - GraphData.First().X;
+                }
 
                 if (AppSettings.YAxisIsPPM)
                 {
@@ -442,8 +490,15 @@ namespace QA350
                 }
                 else
                 {
-                    zedGraphControl1.GraphPane.Title.Text = string.Format("{0}V per div\nMean={1}V Span={2:0}sec", GetYAxisPerDiv(avg).ToEngineeringNotation("0.000"),
-                        avg.ToEngineeringNotation("0.000"), spanSec);
+                    string units;
+
+                    if (AppSettings.MathLabel == "")
+                        units = "V";
+                    else
+                        units = AppSettings.MathLabel;
+                    
+                    zedGraphControl1.GraphPane.Title.Text = string.Format("{0}{1} per div\nMean={2}{3} Span={4:0}sec", GetYAxisPerDiv(avg).ToEngineeringNotation("0.000"), units,
+                        avg.ToEngineeringNotation("0.000"), units, spanSec);
                     zedGraphControl1.GraphPane.YAxis.Scale.MajorStep = GetYAxisPerDiv(avg);
                     zedGraphControl1.GraphPane.YAxis.Scale.Max = avg + GetYAxisPerDiv(avg) * 5;
                     zedGraphControl1.GraphPane.YAxis.Scale.Min = avg - GetYAxisPerDiv(avg) * 5;
@@ -459,6 +514,15 @@ namespace QA350
             }
         }
 
+        /// <summary>
+        /// Converts raw counts computed by the box and sent over via USB
+        /// to actual voltages based on the calibration parameters. This will
+        /// apply both gain and offset corrections, as well as input Z adjustments
+        /// and any user-requested math adjustments
+        /// </summary>
+        /// <param name="counts"></param>
+        /// <param name="ovf"></param>
+        /// <returns></returns>
         private double ConvertCountsToVoltage(int counts, ref bool ovf)
         {
             double v;
@@ -487,10 +551,12 @@ namespace QA350
             // This is a ratio of 1.00467. However, emperically we determine that
             // 1.00988 gives better agreement. The correct solution here is to calibrate 
             // for both in a future update.
-            if (LogSpeed == LoggingSpeedEnum.Fast_1KHz)
+            if (SampleRate == SampleRateEnum.Fast_1KHz)
             {
                 v = v * 1.00988;
             }
+
+            v *= AppSettings.Math;
 
             return v;
         }
@@ -513,6 +579,11 @@ namespace QA350
             ResetStats();
         }
 
+        /// <summary>
+        /// STarts calibration
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void calibrateToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SlowUpdateBtn.On = true;
@@ -554,6 +625,11 @@ namespace QA350
             }
         }
 
+        /// <summary>
+        /// Rel button
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void lightedButton210_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
         {
             SetRelBtn.On = false;
@@ -584,6 +660,11 @@ namespace QA350
                 throw new NotImplementedException("Exception in GetYAxisPerDiv()");
         }
 
+        /// <summary>
+        /// Allows user to update stats and data collection parameters
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void BtnStats_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
         {
             DlgEditStats dlg = new DlgEditStats(AppSettings);
@@ -592,6 +673,7 @@ namespace QA350
             {
                 ResetStats();
                 AppSettings = dlg.AppSettings;
+                label12.Text = AppSettings.MathLabel;
             }
         }
 
@@ -600,7 +682,11 @@ namespace QA350
             Close();
         }
 
-        // Re-flash 
+        /// <summary>
+        /// Called when user selects the menu item to reflash
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void reflashToolStripMenuItem_Click(object sender, EventArgs e)
         {
             //if (Hardware.IsConnected == false)
@@ -618,23 +704,32 @@ namespace QA350
                 return;
             }
 
-            Hardware.EnterBSL();
-
-            // Enter bootloader
-            Thread.Sleep(2000);
             AcqTimer.Enabled = false;
             LEDKickerTimer.Enabled = false;
+            Hardware.EnterBSL();
+            Thread.Sleep(2000);
             Bootloader.EnterBootloader();
 
             MessageBox.Show("Restart the application and replug the hardware");
             Close();
         }
 
+        /// <summary>
+        /// A virgin device is a device with no executable code present. It's fresh from
+        /// the factory. 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void flashVirginDeviceToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Bootloader.EnterBootloader();
         }
 
+        /// <summary>
+        /// Called when user changes logging state in the menu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void loggingToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (loggingToolStripMenuItem.Checked == false)
@@ -651,11 +746,11 @@ namespace QA350
 
                     if (SlowUpdateBtn.On)
                     {
-                        LogSpeed = LoggingSpeedEnum.Slow_2p5Hz;
+                        SampleRate = SampleRateEnum.Slow_2p5Hz;
                     }
                     else if (FastUpdateBtn.On)
                     {
-                        LogSpeed = LoggingSpeedEnum.Fast_1KHz;
+                        SampleRate = SampleRateEnum.Fast_1KHz;
                     }
 
                     new Thread(LoggingThread).Start();
@@ -674,9 +769,13 @@ namespace QA350
             }
         }
 
+        /// <summary>
+        /// This thread is spun up when logging is turned on. If there's a problem during logging 
+        /// of any kind (file access, bad communication with hardware, etc) then this thread will exit. 
+        /// </summary>
         private void LoggingThread()
         {
-            double dt;
+            float dt;
             int sample = 0;
             byte LastSequence = 0;
             bool firstRead = true;
@@ -684,27 +783,18 @@ namespace QA350
             Debug.WriteLine("Logging thread started");
 
             FileStream fs = null;
-            StreamWriter sw = null;
+            BinaryWriter sw = null;
 
             try
             {
-                switch (LogSpeed)
-                {
-                    case LoggingSpeedEnum.Fast_1KHz:
-                        dt = 1e-3;
-                        break;
-                    case LoggingSpeedEnum.Slow_2p5Hz:
-                        dt = 400e-3;
-                        break;
-                    default:
-                        throw new InvalidEnumArgumentException("LoggingThread in Form1.cs");
-                }
-
+                dt = (float)(1.0 / GetSampleRate());
+                
                 fs = new FileStream(LogFile, FileMode.Create, FileAccess.Write);
-                sw = new StreamWriter(fs);
+                sw = new BinaryWriter(fs);
 
-                sw.WriteLine("# Data acquired {0} {1}", DateTime.Now.ToShortDateString(), DateTime.Now.ToShortTimeString());
-                sw.WriteLine("# Sample Rate: " + LogSpeed.ToString());
+                // Barker
+                sw.Write(0xCAFE8224);
+                sw.Write(GetSampleRate());
 
                 while (LoggingEnabled)
                 {
@@ -736,16 +826,20 @@ namespace QA350
                         break;
                     }
 
-                    while (LastSequence + 1 != buffer[0].SequenceId)
+                    // If we're missing a block of data, write null samples to indicate such. 
+                    while ( (byte)(LastSequence + 1) != buffer[0].SequenceId)
                     {
-                        sw.WriteLine("+,{0},0", sample++ * dt);
+                        sw.Write(sample++ * dt);
+                        sw.Write(float.NaN);
                         ++LastSequence;
                     }
 
                     for (int i = 0; i < buffer.Length; i++)
                     {
                         bool ovf = false;
-                        sw.WriteLine("-,{0:0.000},{1:N6}", sample++ * dt, ConvertCountsToVoltage(buffer[i].Value, ref ovf));
+                        //sw.WriteLine("-,{0:0.000},{1:N6}", sample++ * dt, ConvertCountsToVoltage(buffer[i].Value, ref ovf));
+                        sw.Write(sample++ * dt);
+                        sw.Write((float)ConvertCountsToVoltage(buffer[i].Value, ref ovf));
                         LastSequence = buffer[i].SequenceId;
                     }
                 }
@@ -767,31 +861,74 @@ namespace QA350
             }
 
             LoggingEnabled = false;
-            Debug.WriteLine("Logging thread exited");
+            Debug.WriteLine("Logging thread exited. {0} samples written.", sample);
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Called whenever sample rate is changed. You must also 
+        /// change the UI state to ensure it matches the state set
+        /// here
+        /// </summary>
+        /// <param name="newSampleRate"></param>
+        private void SetSampleRate(SampleRateEnum newSampleRate)
         {
-           
+            SampleRate = newSampleRate;
+
+            switch (newSampleRate)
+            {
+                case SampleRateEnum.Fast_1KHz:
+                    AcqTimer.Interval = 50;
+                    Hardware.SetSampleRate(QA350.SampleRate.Fast);
+                    Label_2p5sps.Visible = false;
+                    Label_1ksps.Visible = true;
+                    break;
+                case SampleRateEnum.Slow_2p5Hz:
+                    AcqTimer.Interval = 405;
+                    Hardware.SetSampleRate(QA350.SampleRate.Slow);
+                    Label_2p5sps.Visible = true;
+                    Label_1ksps.Visible = false;
+                    break;
+                default:
+                    break;
+            }
+
+            ResetStats();
         }
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-           
-        }
-
+        /// <summary>
+        /// Called when user selects fast sample rate
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void FastUpdateBtn_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
         {
-            Hardware.SetSampleRate(SampleRate.Fast);
-            ResetStats();
-            AcqTimer.Interval = 50;
+            if (FastUpdateBtn.On)
+            {
+                SetSampleRate(SampleRateEnum.Fast_1KHz);
+            }
         }
 
+        /// <summary>
+        /// Called when user selects slow sample rate
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SlowUpdateBtn_ButtonPressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
         {
-            Hardware.SetSampleRate(SampleRate.Slow);
-            ResetStats();
-            AcqTimer.Interval = 410;
+            if (SlowUpdateBtn.On)
+            {
+                SetSampleRate(SampleRateEnum.Slow_2p5Hz);
+            }
+        }
+
+        private void analyzeLogToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DlgAnalyze dlg = new DlgAnalyze();
+
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ namespace QA350
         public Settings AppSettings;
 
         private bool NumericIgnoreUpdates = false;
+        List<double> MathVals = new List<double>() { 1000, 100, 10, 1, 0.1, 0.01, 0.001 };
 
         public DlgEditStats()
         {
@@ -50,6 +51,12 @@ namespace QA350
 
             numericUpDown6.Value = Convert.ToDecimal(AppSettings.SampleHistory);
             NumericIgnoreUpdates = false;
+
+            BindingSource bs = new BindingSource();
+            bs.DataSource = MathVals;
+            comboBox1.DataSource = bs;
+            comboBox1.SelectedIndex = MathVals.FindIndex(o => o == AppSettings.Math);
+            textBox1.Text = AppSettings.MathLabel;
         }
 
         // OK button
@@ -80,6 +87,9 @@ namespace QA350
             AppSettings.HistoBinInMV = Convert.ToInt32(numericUpDown5.Value);
 
             AppSettings.SampleHistory = Convert.ToInt32(numericUpDown6.Value);
+
+            AppSettings.Math = MathVals[comboBox1.SelectedIndex];
+            AppSettings.MathLabel = textBox1.Text;
 
             Close();
         }

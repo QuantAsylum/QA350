@@ -143,65 +143,11 @@ namespace QA350
             }
 
             return unchecked((int)val);
-
-            /*
-            lock (UsbLockObj)
-            {
-                if (Msp430 != null)
-                {
-                    // Read raw voltage by sending a two byte command. This will be received on the MSP430 as a
-                    // 0x0001 command (read ADC)
-                    if (USBSendData(new byte[] { 0x01, 0x00 }))
-                    {
-                        byte[] buffer;
-
-                        if (USBRecvData(out buffer))
-                        {
-                            // Data comes back as AA BB CC DD
-                            // AA = sequence number
-                            // BB = MSB of voltage reading
-                            // CC
-                            // DD = LSB of voltage reading
-                            if ((buffer[1] & 0x80) > 0)
-                            {
-                                // Sign extend
-                                buffer[0] = 0xff;
-                            }
-                            else
-                            {
-                                buffer[0] = 0;
-                            }
-
-                            Int32 data = (buffer[0] << 24) + (buffer[1] << 16) + (buffer[2] << 8) + buffer[3];
-                            return data;
-                        }
-                    }
-                }
-            }
-
-            IsConnected = false;
-
-            return 0;
-            */
         }
 
         static public int GetFifoDepth()
         {
             return SendRecv(0x5);
-            /*
-            if (USBSendData(new byte[] { 0x05, 0x00 }))
-            {
-                byte[] buffer;
-
-                if (USBRecvData(out buffer))
-                {
-                    Int32 data = (buffer[0] << 24) + (buffer[1] << 16) + (buffer[2] << 8) + buffer[3];
-                    return data;
-                }
-            }
-
-            return 0;
-            */
         }
 
         static public StreamSample[] ReadVoltageStream()

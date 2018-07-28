@@ -26,6 +26,7 @@ MSP430 Workspace - Copy*/
 [Bb]oneyard/
 .metadata/
 art/
+.vs/
 *.suo
 *.config
 *.nupkg

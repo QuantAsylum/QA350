@@ -821,6 +821,7 @@ namespace QA350
                         LastSequence = (byte)(buffer[0].SequenceId - (byte)1);
                     }
 
+                    // If nothing read, then bail
                     if (buffer.Length == 0)
                     {
                         break;
@@ -829,7 +830,7 @@ namespace QA350
                     // If we're missing a block of data, write null samples to indicate such. 
                     while ( (byte)(LastSequence + 1) != buffer[0].SequenceId)
                     {
-                        sw.Write(sample++ * dt);
+                        //sw.Write(sample++ * dt);
                         sw.Write(float.NaN);
                         ++LastSequence;
                     }
@@ -838,7 +839,7 @@ namespace QA350
                     {
                         bool ovf = false;
                         //sw.WriteLine("-,{0:0.000},{1:N6}", sample++ * dt, ConvertCountsToVoltage(buffer[i].Value, ref ovf));
-                        sw.Write(sample++ * dt);
+                        //sw.Write(sample++ * dt);
                         sw.Write((float)ConvertCountsToVoltage(buffer[i].Value, ref ovf));
                         LastSequence = buffer[i].SequenceId;
                     }

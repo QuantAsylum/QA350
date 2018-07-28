@@ -53,18 +53,21 @@ namespace QA350
                 if (br.ReadUInt32() != 0xCAFE8224)
                     return;
 
+                double sampleRate = br.ReadDouble();
+                dt = (float)(1 / sampleRate);
+
                 while (br.BaseStream.Position < br.BaseStream.Length)
                 {
-                    float time = br.ReadSingle();
+                    //float time = br.ReadSingle();
                     float value = br.ReadSingle();
 
-                    if (time != 0 && dt == 0)
-                        dt = time;
+                    //if (time != 0 && dt == 0)
+                    //    dt = time;
 
                     if (float.IsNaN(value))
                     {
                         ++missedSamples;
-                        value = float.NaN;
+                        //value = float.NaN;
                     }
 
                     Data.Add(value);
@@ -72,7 +75,7 @@ namespace QA350
 
                 Log("Loaded {0} samples", Data.Count);
                 Log("There were {0} missing samples [{1:0}%]", missedSamples, 100.0 * missedSamples / Data.Count);
-                Log("Sample rate: {0:0.000}", 1 / dt);
+                Log("Sample rate: {0:0.000}", sampleRate);
 
                 float interval, sd;
                 ComputeWakeupStats(Data, dt, out interval, out sd);

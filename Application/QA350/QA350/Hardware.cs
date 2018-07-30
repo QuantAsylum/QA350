@@ -16,11 +16,18 @@ namespace QA350
 
     enum SampleRate { Slow, Fast};
 
+    enum Mode { DC = 0, RMS = 1 }
+
+
+
     /// <summary>
     /// Class encapsulates hardware functionality of the QA350
     /// </summary>
     static class Hardware  
     {
+
+        public const int INVALID_VALUE = unchecked((int)0x80FFFFFF);
+
         /// <summary>
         /// Instance of the HID library
         /// </summary>
@@ -31,6 +38,8 @@ namespace QA350
         static public bool IsConnected = false;
 
         static object UsbLockObj = new object();
+
+        static Mode Mode = Mode.DC;
 
         /// <summary>
         /// Attempt to open the USB connection to the QA350. If already
@@ -48,6 +57,8 @@ namespace QA350
             {
                 // Device ID is connected. Open it.
                 Msp430.OpenDevice();
+                // Set to defaults (DC mode, slow sample rate, no atten, etc)
+                Reset();
                 IsConnected = true;
                 return true;
             }
@@ -122,12 +133,24 @@ namespace QA350
 
         /// <summary>
         /// Reads the voltage counts at the inputs indicated by the last SetAtten() call. These are raw
-        /// reads, no corrections are applied
+        /// reads, no corrections are applied. 
         /// </summary>
         /// <returns></returns>
         static public int ReadVoltageCounts()
         {
-            uint val = unchecked ((uint)SendRecv(0x1));
+            //return SendRecv(0x1);
+
+            if (GetMode() != Mode.DC)
+                throw new InvalidOperationException("Invalid mode operation in ReadVoltageCounts()");
+
+            int rawVal = SendRecv(0x1);
+
+            if (rawVal == INVALID_VALUE)
+            {
+                return INVALID_VALUE;
+            }
+
+            uint val = unchecked ((uint)rawVal);
 
             // Given a word AABBCCDD, the voltage is represented as a 24-bit value
             // BBCCDD. We need to see if is negative or not (based on BB value) and 
@@ -158,6 +181,7 @@ namespace QA350
             {
                 if (Msp430 != null)
                 {
+                    // Request stream of 48 bytes (12 samples)
                     if (USBSendData(new byte[] { 0x04, 0x00 }))
                     {
                         byte[] wordBuf;
@@ -196,12 +220,12 @@ namespace QA350
         }
 
         /// <summary>
-        /// Sets the attenuator on the device. 
+        /// Sets the attenuator on the device. 0 means no atten is active (low range), 
+        /// 1 means atten is active (high range)
         /// </summary>
         /// <param name="atten"></param>
         static public void SetAtten(int atten)
         {
-            
             if (Msp430 != null) 
             {
                 USBSendData(new byte[] { 0x03, (byte)atten });
@@ -216,6 +240,63 @@ namespace QA350
                 USBSendData(new byte[] { 0x06, val });
             }
         }
+
+        static public void Reset()
+        {
+            if (Msp430 != null)
+            {
+                USBSendData(new byte[] { 251, 0 });
+            }
+        }
+
+        static public void SetMode(Mode mode)
+        {
+            USBSendData(new byte[] { 12, (byte)mode });
+            Mode = mode;
+        }
+
+        static public Mode GetMode()
+        {
+            return Mode;
+        }
+
+        static public void StartRmsConversion()
+        {
+            USBSendData(new byte[] { 13, 0 });
+        }
+
+        static public int ReadRmsCounts()
+        {
+            if (GetMode() != Mode.RMS)
+            {
+                throw new InvalidOperationException("Invalid mode operation in ReadRmsCounts()");
+            }
+
+            int rawVal = SendRecv(14);
+
+            if (rawVal == INVALID_VALUE)
+            {
+                return INVALID_VALUE;
+            }
+
+            uint val = unchecked((uint)rawVal);
+
+            // Given a word AABBCCDD, the voltage is represented as a 24-bit value
+            // BBCCDD. We need to see if is negative or not (based on BB value) and 
+            // sign extend if it is
+            if (((val >> 16) & 0xFF) > 0x80)
+            {
+                // Sign extend
+                val |= 0xFF000000;
+            }
+            else
+            {
+                val &= 0x00FFFFFF;
+            }
+
+            return unchecked((int)val);
+        }
+
 
         /// <summary>
         /// Tells the device to keep the 'LINK' LED active for another 1000 mS or so

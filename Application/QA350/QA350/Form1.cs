@@ -136,16 +136,19 @@ namespace QA350
             RelModeLabel.Visible = false;
             LoggingLabel.Visible = false;
 
-            Label_2p5sps.Visible = true;
-            Label_1ksps.Visible = false;
-
-            SampleRate = SampleRateEnum.Slow_2p5Hz;
+            //Label_2p5sps.Visible = true;
+            //Label_1ksps.Visible = false;
+            //SampleRate = SampleRateEnum.Slow_2p5Hz;
+            DcBtn_Pressed(null, null);
 
             LoadFontData();
 
             InitGraphs();
 
             Text += "  (" + Constants.Version.ToString("0.00") + ")";
+
+            // Not ready yet
+            analysisToolStripMenuItem.Visible = false;
         }
 
         /// <summary>
@@ -389,10 +392,6 @@ namespace QA350
         /// <param name="e"></param>
         private void AckTimer_Tick(object sender, EventArgs e)
         {
-            //return;
-
-            bool ovf = false;
-
             // Check if we've been unplugged
             try
             {
@@ -403,12 +402,42 @@ namespace QA350
                 }
 
                 // Read the raw counts
-                RawDataCounts = Hardware.ReadVoltageCounts();
+                if (Hardware.GetMode() == Mode.DC)
+                {
+                    RawDataCounts = Hardware.ReadVoltageCounts();
+                }
+                else if (Hardware.GetMode() == Mode.RMS)
+                {
+                    Console.WriteLine("Mode RMS. Reading counts.");
+                    RawDataCounts = Hardware.ReadRmsCounts();
+                    if (RawDataCounts != Hardware.INVALID_VALUE)
+                    {
+                        Console.WriteLine("Mode RMS. Starting new conversion");
+                        Hardware.StartRmsConversion();
+                    }
+                    else
+                    {
+                        // Value isn't ready yet
+                        Console.WriteLine("Mode RMS. Conversion not ready");
+                        return;
+                    }
+
+
+                }
             }
             catch
             {
                 ConnectionLost();
             }
+
+            // At this point, we're connected and have pulled over the raw counts
+
+            ProcessRawCounts();
+        }
+
+        private void ProcessRawCounts()
+        {
+            bool ovf = false;
 
             // Convert counts to voltage.  
             double v = ConvertCountsToVoltage(RawDataCounts, ref ovf);
@@ -463,11 +492,16 @@ namespace QA350
             GraphData.Add(DateTime.Now.Subtract(StartTime).TotalSeconds, v);
 
             // Remove the old points
-            while (GraphData.Count > Readings.Count )
-            { 
+            while (GraphData.Count > Readings.Count)
+            {
                 GraphData.RemoveAt(0);
             }
 
+            GraphCollectedData();
+        }
+
+        private void GraphCollectedData()
+        {
             if (Readings.Count > 0)
             {
                 double avg = Readings.Average();
@@ -496,7 +530,7 @@ namespace QA350
                         units = "V";
                     else
                         units = AppSettings.MathLabel;
-                    
+
                     zedGraphControl1.GraphPane.Title.Text = string.Format("{0}{1} per div\nMean={2}{3} Span={4:0}sec", GetYAxisPerDiv(avg).ToEngineeringNotation("0.000"), units,
                         avg.ToEngineeringNotation("0.000"), units, spanSec);
                     zedGraphControl1.GraphPane.YAxis.Scale.MajorStep = GetYAxisPerDiv(avg);
@@ -551,9 +585,13 @@ namespace QA350
             // This is a ratio of 1.00467. However, emperically we determine that
             // 1.00988 gives better agreement. The correct solution here is to calibrate 
             // for both in a future update.
-            if (SampleRate == SampleRateEnum.Fast_1KHz)
+            if ( (Hardware.GetMode() == Mode.DC) && (SampleRate == SampleRateEnum.Fast_1KHz) )
             {
                 v = v * 1.00988;
+            }
+            else if (Hardware.GetMode() == Mode.RMS)
+            {
+                v = v * 1.0233;
             }
 
             v *= AppSettings.Math;
@@ -930,6 +968,36 @@ namespace QA350
             {
 
             }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+           
+        }
+
+        // RMS Button
+        private void RmsButton_Pressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
+        {
+            ResetStats();
+            Hardware.SetMode(Mode.RMS);
+            Hardware.StartRmsConversion();
+            RmsLabel.Visible = true;
+            Label_2p5sps.Visible = false;
+            Label_1ksps.Visible = false;
+            FastUpdateBtn.Enabled = false;
+            SlowUpdateBtn.Enabled = false;
+        }
+
+        // DC button
+        private void DcBtn_Pressed(object sender, LightedButton2.LightedButton2.ButtonPressedArgs e)
+        {
+            ResetStats();
+            Hardware.SetMode(Mode.DC);
+            RmsLabel.Visible = false;
+            FastUpdateBtn.Enabled = true;
+            SlowUpdateBtn.Enabled = true;
+            SlowUpdateBtn.On = true;
+            Label_1ksps.Visible = true;
         }
     }
 }

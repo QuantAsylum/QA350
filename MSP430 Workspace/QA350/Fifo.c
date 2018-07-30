@@ -30,6 +30,10 @@ void FifoPush(uint32_t data)
 	DataBuffer[WritePtr] =  LastPushed;
 	++SequenceId;
 
+	// Sequence ID runs from 0..127
+	if (SequenceId >= 128)
+		SequenceId = 0;
+
 	++WritePtr;
 	WritePtr &= (BUFSIZE-1);
 

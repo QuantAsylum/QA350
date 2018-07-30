@@ -46,6 +46,7 @@
  * Please refer to the Examples Guide for more details.
  *----------------------------------------------------------------------------*/
 #include <string.h>
+#include <math.h>
 
 #include "driverlib.h"
 
@@ -65,16 +66,37 @@
 #define REF         REF_BASE
 #define SPI 		USCI_A1_BASE
 
+
+
+#define MODE_DC 	0
+#define MODE_RMS 	1
+
+#define SR_2P5  0
+#define SR_1k   1
+#define SR_30k  2
+
+uint8_t DcSampleRate;
+
+uint8_t Mode;
+
+#define  RMS_SAMPLES 16384
+int64_t  RmsAccum;
+uint16_t RmsSample;
+uint8_t  RmsBusy;
+
+
 // Forward Declarations
 uint32_t GetSysTime();
 void DelayUS(uint16_t delayUS);
 void Delay(uint32_t delayMS);
 void ProcessUsbData();
 void SetADS1256SampleRate(uint8_t);
+void ResetQA350();
 
 // Global flags set by events
-volatile uint8_t bCommandBeingProcessed = FALSE;
+//volatile uint8_t bCommandBeingProcessed = FALSE;
 volatile uint8_t bDataReceiveCompleted_event = FALSE;  // data receive completed event
+volatile uint8_t bSampleReady_event = FALSE;
 
 // Application globals
 uint16_t x,y;
@@ -92,6 +114,26 @@ volatile uint32_t SysTicks;
 
 volatile uint16_t LEDConnected;  // Kicked by PC application at least once per second to keep LED lit
 volatile uint8_t LEDCommand;     // Toggled for 50 mS upon receipt of command from the PC
+
+int8_t IntRefCount;
+
+void EIntRefCounted()
+{
+	if (IntRefCount > 0)
+		--IntRefCount;
+
+	if (IntRefCount == 0)
+		__enable_interrupt();
+}
+
+void DIntRefCounted()
+{
+	if (IntRefCount < 126)
+		++IntRefCount;
+
+	if (IntRefCount == 1)
+		__disable_interrupt();
+}
 
 void InitClocks()
 {
@@ -196,7 +238,7 @@ void InitTimerA()
 }
 
 //
-// SPI communication with ADS ADC. We'll run at 1 MHz. Max for ADS1256 is 2.5 MHz
+// SPI communication with ADS ADC. We'll run at 2.5 MHz. Max for ADS1256 is 2.5 MHz
 // (see figure 1 in spec, where t2l + t2h = 400 nS = 2.5 MHz
 //
 void InitSPI()
@@ -204,7 +246,7 @@ void InitSPI()
 	USCI_A_SPI_initMasterParam param;
 	param.selectClockSource = USCI_A_SPI_CLOCKSOURCE_ACLK;
 	param.clockSourceFrequency = UCS_getACLK();
-	param.desiredSpiClock = 1000000;
+	param.desiredSpiClock = 2500000;
 	param.msbFirst = USCI_A_SPI_MSB_FIRST;
 	param.clockPhase = USCI_A_SPI_PHASE_DATA_CHANGED_ONFIRST_CAPTURED_ON_NEXT; // Latch on falling
 	param.clockPolarity = USCI_A_SPI_CLOCKPOLARITY_INACTIVITY_LOW;
@@ -216,11 +258,10 @@ void InitSPI()
 //
 // Send a 32-bit word via SPI
 //
+/*
 uint32_t SendSPI(uint32_t data)
 {
 	uint32_t r = 0;
-
-	//ASSERT_CS;
 
 	USCI_A_SPI_transmitData(SPI, data >> 24);
 	r = (r << 8) + USCI_A_SPI_receiveData(SPI);
@@ -234,10 +275,9 @@ uint32_t SendSPI(uint32_t data)
 	USCI_A_SPI_transmitData(SPI, data >> 0);
 	r = (r << 8) + USCI_A_SPI_receiveData(SPI);
 
-	//DEASSERT_CS;
-
 	return r;
 }
+*/
 
 // ADS1256 data notes:
 // Input clock is 7.68 MHz == 130 nS
@@ -256,8 +296,6 @@ void WriteADS1256Reg(uint8_t reg, uint8_t val)
 	reg &= 0x0F;  // Mask register
 	reg |= 0x50;  // Command
 
-	//ASSERT_CS;
-
 	USCI_A_SPI_transmitData(SPI, reg);   // This is the 1st command byte
 	while (USCI_A_SPI_isBusy(SPI));
     USCI_A_SPI_receiveData(SPI);         // Junk read
@@ -269,10 +307,6 @@ void WriteADS1256Reg(uint8_t reg, uint8_t val)
 	USCI_A_SPI_transmitData(SPI, val);   // Run the clock for 8 more cycles to write the byte
 	while (USCI_A_SPI_isBusy(SPI));
 	USCI_A_SPI_receiveData(SPI);         // Junk read
-	//DelayUS(2);
-
-	//DEASSERT_CS;
-	//DelayUS(10);
 }
 
 //
@@ -283,25 +317,18 @@ uint8_t ReadADS1256Reg(uint8_t reg)
 	reg &= 0x0F;  // Mask register
 	reg |= 0x10;  // Command
 
-	//ASSERT_CS;
-
 	USCI_A_SPI_transmitData(SPI, reg);   // This is the 1st command byte
 	while (USCI_A_SPI_isBusy(SPI));
     USCI_A_SPI_receiveData(SPI);         // Junk read
-
 
 	USCI_A_SPI_transmitData(SPI, 0);     // This is the number of bytes to read MINUS 1
 	while (USCI_A_SPI_isBusy(SPI));
     USCI_A_SPI_receiveData(SPI);         // Junk read
 
-	DelayUS(10);						// This is t6 in spec (6.5uS is the min). See Fig1 and Fig 30
+	DelayUS(5);						// This is t6 in spec (6.5uS is the min). See Fig1 and Fig 30
 
 	USCI_A_SPI_transmitData(SPI, 0);    // Run the clock for 8 more cycles to grab the byte
 	while (USCI_A_SPI_isBusy(SPI));
-	//DelayUS(2);
-	//DEASSERT_CS;
-
-	//DelayUS(10);
 
 	return USCI_A_SPI_receiveData(SPI);
 }
@@ -310,7 +337,7 @@ uint8_t ReadADS1256Reg(uint8_t reg)
 // Read data from ADS. This will block until the part is ready. If the part never
 // becomes ready, then this will hang
 //
-uint32_t ReadADS1256Data()
+int32_t ReadADS1256Data()
 {
 	uint32_t data = 0;
 
@@ -318,14 +345,12 @@ uint32_t ReadADS1256Data()
 	while (IS_DATAREADY == 0)
 		;
 
-	//ASSERT_CS;
-
 	USCI_A_SPI_transmitData(SPI, 0x01);  // Send first command byte (command + addr)
 	while (USCI_A_SPI_isBusy(SPI));
 	USCI_A_SPI_receiveData(SPI);         // Junk read
 
 	// Delay t6 (see spec: at least 6.5us) to wait for response
-	DelayUS(10);
+	DelayUS(5);
 
 	USCI_A_SPI_transmitData(SPI, 0x00);
 	while (USCI_A_SPI_isBusy(SPI));
@@ -339,7 +364,11 @@ uint32_t ReadADS1256Data()
 	while (USCI_A_SPI_isBusy(SPI));
 	data = (data << 8) + USCI_A_SPI_receiveData(SPI);
 
-	//DEASSERT_CS;
+	// Sign extend to full 32 bits
+	if ( (data & 0x00800000) > 0)
+	{
+		data += 0xFF000000;
+	}
 
 	return data;
 }
@@ -395,8 +424,6 @@ void SetADS1256PGA(int pga)
 	pga &= 0x7;
 	WriteADS1256Reg(2, pga);
 	SyncADS1256();
-
-	//WaitUntilDataReady(); // We can't wait, otherwise it screws up USB communications
 }
 
 // Atten Level 0 = inputs 0/1 with D3 set high (atten SSR closed)
@@ -405,15 +432,21 @@ void SetADS1256Atten(int attenLevel)
 {
 	switch (attenLevel)
 	{
-		case 0: WriteADS1256Reg(1, 0x01); WriteADS1256Reg(4, 0x78); break;
-		case 1: WriteADS1256Reg(1, 0x23); WriteADS1256Reg(4, 0x70);break;
-		//case 2: WriteADS1256Reg(1, 0x43); break;
-		//case 3: WriteADS1256Reg(1, 0x52); break;
+		case 0:
+			WriteADS1256Reg(1, 0x01); WriteADS1256Reg(4, 0x78);
+			break;
+		case 1:
+			WriteADS1256Reg(1, 0x23); WriteADS1256Reg(4, 0x70);
+			break;
+		default:
+			while (1);
+
+
+
 	}
 
 	SyncADS1256();
 
-	//ADS1256SelfCal();
 }
 
 void ADS1256SelfCal()
@@ -425,24 +458,19 @@ void ADS1256SelfCal()
 
 void InitADS1256()
 {
-	//DEASSERT_RESET;
-	//DEASSERT_SYNC;
 	DelayUS(1000);
 
 	WriteADS1256Reg(0, 0x6);  // Enable buffer and enable auto cal
 	SyncADS1256();
-	//WaitUntilDataReady();
 
 	SetADS1256Atten(0);       // Select inputs 3/4. This will issue sync
-	//WaitUntilDataReady();
 
 	WriteADS1256Reg(2, 0);    // CLKout off, sensor detect off, PGA = 1
 	SyncADS1256();
-	//WaitUntilDataReady();
 
-	SetADS1256SampleRate(1);
+	DcSampleRate = SR_1k;
+	SetADS1256SampleRate(SR_1k);
 	SyncADS1256();
-	//WaitUntilDataReady();
 }
 
 //
@@ -450,18 +478,23 @@ void InitADS1256()
 //
 void SetADS1256SampleRate(uint8_t sampleRate)
 {
-	if (sampleRate == 0)
+	if (sampleRate == SR_2P5)
 	{
 		// Sample slow, 400mS sample period
 		WriteADS1256Reg(3, 0x3); // Set to 2.5 SPS
-		//WaitUntilDataReady();
 	}
-	else if (sampleRate == 1)
+	else if (sampleRate == SR_1k)
 	{
 		// Sample fast, 1 mS period
 		WriteADS1256Reg(3, 0xA1); // Set to 1000 sps
-		//WriteADS1256Reg(3, 0xC0); // Set to 3750 sps
-		//WaitUntilDataReady();
+	}
+	else if (sampleRate == SR_30k)
+	{
+		// RMS mode, set to 30,000 SPS
+		WriteADS1256Reg(3, 0xE0);
+
+		// 7500 sps
+		//WriteADS1256Reg(3, 0xD0);
 	}
 
 	SyncADS1256();
@@ -496,6 +529,25 @@ void SweepLED()
 	}
 }
 
+void SetMode(uint8_t mode)
+{
+	Mode = mode;
+
+	if (mode == MODE_DC)
+	{
+		Mode = MODE_DC;
+		SetADS1256SampleRate(DcSampleRate);
+	}
+	else if (mode == MODE_RMS)
+	{
+		Mode = MODE_RMS;
+		//SetADS1256SampleRate(SR_30k);
+		//RmsAccum = 0;
+		//RmsSample = 0;
+		//RmsBusy = 1;
+	}
+}
+
 /*  
  * ======== main ========
  */
@@ -525,9 +577,12 @@ void main (void)
     DelayUS(5000);           // Safe number
     InitADS1256();
     DelayUS(5000);           // Safe number
-    SetADS1256SampleRate(0); // Set slow sample rate to match UI default
+    DcSampleRate = SR_2P5;
+    SetADS1256SampleRate(SR_2P5); // Set slow sample rate to match UI default
 
     USB_setup(TRUE, TRUE); // Init USB & events; if a host is present, connect
+
+    ResetQA350();
 
     // Enable DRDY interrupt handling.
 	GPIO_enableInterrupt(GPIO_PORT_P2, GPIO_PIN5);
@@ -566,11 +621,42 @@ void main (void)
                 // Wait in LPM0 until a receive operation has completed
                 __bis_SR_register(LPM0_bits + GIE);
 
-
                 if (bDataReceiveCompleted_event)
                 {
                     bDataReceiveCompleted_event = FALSE;
                     ProcessUsbData();
+                }
+
+                if (bSampleReady_event)
+                {
+                	bSampleReady_event = FALSE;
+                	volatile int32_t data = ReadADS1256Data();
+
+					if (Mode == MODE_DC)
+					{
+						FifoPush(data);
+					}
+					else if (Mode == MODE_RMS)
+					{
+						if (RmsSample < RMS_SAMPLES)
+						{
+							++RmsSample;
+
+							data = data >> 4;
+
+							RmsAccum += ((int64_t)data * (int64_t)data);
+						}
+						else
+						{
+							// Done
+							RmsBusy = false;
+						}
+					}
+					else
+					{
+						// Unknown mode
+						while (1);
+					}
                 }
 
                 break;
@@ -615,8 +701,17 @@ void ProcessUsbData()
 			break;
 
 		case 1:
-			// Read last ADC reading. This won't disturb the fifo
+			// Read last ADC reading. This won't disturb the fifo. If not in DC
+			// mode, this will intentionally hang
 			LEDCommand = 100; 		// 100 mS flash
+
+			if (Mode != MODE_DC)
+			{
+				while (1)
+				{
+					LEDCommand = 100;
+				}
+			}
 
 			data = FifoPeekLastPushed();
 
@@ -650,8 +745,17 @@ void ProcessUsbData()
 			break;
 
 		case 4:
-			// Stream data. Grab 12 words / 48 bytes from the FIFO
+			// Stream data. Grab 12 words / 48 bytes from the FIFO. If not used in
+			// DC mode, this will intentionally hang the device
 			LEDCommand = 100; 		// 100 mS flash
+
+			if (Mode != MODE_DC)
+			{
+				while (1)
+				{
+					LEDCommand = 100;
+				}
+			}
 
 			for (i=0; i<48; i+=4)
 			{
@@ -677,7 +781,8 @@ void ProcessUsbData()
 			break;
 
 		case 5:
-			// Query fifo count. If more than 12, then host can pull a full buffer
+			// Query fifo count. If more than 12, then host can pull a full buffer. This
+			// can be done in any mode, but doesn't make sense unless you are in DC mode
 			data = FifoCount();
 			UsbBuffer[0] = data >> 24;
 			UsbBuffer[1] = data >> 16;
@@ -698,9 +803,95 @@ void ProcessUsbData()
 			}
 			break;
 
+		// Sets DC sample rate, either 2.5SPS or 1K sps. May be called
+	    // while in DC or RMS mode, but will only change settings
+		// immediately if in DC mode.
 		case 6:
-			SetADS1256SampleRate(UsbBuffer[1]);
+			DcSampleRate = UsbBuffer[1];
+			if (Mode == MODE_DC)
+				SetADS1256SampleRate(DcSampleRate);
 			FifoClear();
+			break;
+
+		// Set mode of operation, either DC or RMS
+		case 12:
+			if (Mode == MODE_DC)
+				SetADS1256SampleRate(DcSampleRate);
+
+			SetMode(UsbBuffer[1]);
+
+			FifoClear();
+			break;
+
+		// Start RMS sample. If not in RMS mode, this will
+		// intentionally hang
+		case 13:
+			LEDCommand = 100; 		// 100 mS flash
+
+			if (Mode != MODE_RMS)
+			{
+				while (1)
+				{
+					LEDCommand = 100;
+				}
+			}
+
+			RmsAccum = 0;
+			RmsSample = 0;
+			RmsBusy = 1;
+			SetADS1256SampleRate(SR_30k);
+			break;
+
+		// Retrieve RMS reading. If not in RMS mode, this
+		// will intentionally hang
+		case 14:
+			LEDCommand = 100; 		// 100 mS flash
+
+			if (Mode != MODE_RMS)
+			{
+				while (1)
+				{
+					LEDCommand = 100;
+				}
+			}
+
+			if (RmsBusy)
+			{
+				UsbBuffer[0] = INVALID_RESULT >> 24;
+				UsbBuffer[1] = INVALID_RESULT >> 16;
+				UsbBuffer[2] = INVALID_RESULT >> 8;
+				UsbBuffer[3] = INVALID_RESULT >> 0;
+			}
+			else
+			{
+				RmsAccum = RmsAccum / (int64_t)RMS_SAMPLES;
+			    uint32_t result = (int32_t)sqrtl(RmsAccum);
+
+			    result = result << 4;
+
+				UsbBuffer[0] = result >> 24;
+				UsbBuffer[1] = result >> 16;
+				UsbBuffer[2] = result >> 8;
+				UsbBuffer[3] = result >> 0;
+			}
+
+			if (hidSendDataInBackground( UsbBuffer, USB_BUF_LEN, HID0_INTFNUM,0))
+			{
+				// Operation may still be open; cancel it if the
+				// send fails, escape the main loop
+				USBHID_abortSend(&x,HID0_INTFNUM);
+				break;
+			}
+			else
+			{
+				// Send was successful
+
+			}
+			break;
+
+		// Reset to known state
+		case 251:
+			ResetQA350();
 			break;
 
 		case 253:
@@ -727,7 +918,7 @@ void ProcessUsbData()
 
 		case 254:
 			// Read software version
-			data = 10;
+			data = 11;
 			UsbBuffer[0] = data >> 24;
 			UsbBuffer[1] = data >> 16;
 			UsbBuffer[2] = data >> 8;
@@ -762,15 +953,59 @@ void ProcessUsbData()
 
 }
 
+void ResetQA350()
+{
+	SetMode(MODE_DC);
+	SetADS1256SampleRate(SR_2P5);
+	SetADS1256PGA(0);
+
+	// Low range, no atten active
+	SetADS1256Atten(0);
+	FifoClear();
+}
+
 //
 // ISR Code
 //
 #pragma vector=PORT2_VECTOR
 __interrupt void Port_5(void)
 {
-	uint32_t data = ReadADS1256Data();
-	FifoPush(data);
+	bSampleReady_event = TRUE;
+	/*
+	// BUGBUG: Get rid of volatile. This is to help with debug only and will
+	// impact optimization
+	volatile int32_t data = ReadADS1256Data();
+
+	if (Mode == MODE_DC)
+	{
+		FifoPush(data);
+	}
+	else if (Mode == MODE_RMS)
+	{
+		if (RmsSample < RMS_SAMPLES)
+		{
+			++RmsSample;
+
+			data = data >> 4;
+
+			RmsAccum += ((int64_t)data * (int64_t)data);
+		}
+		else
+		{
+			// Done
+			RmsBusy = false;
+		}
+	}
+	else
+	{
+		// Unknown mode
+		while (1);
+	}
+	*/
+
 	GPIO_clearInterruptFlag(GPIO_PORT_P2, GPIO_PIN5);
+	__bic_SR_register_on_exit(CPUOFF);
+
 }
 
 

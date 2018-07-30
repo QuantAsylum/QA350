@@ -45,12 +45,17 @@
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.calibrateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.analysisToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.analyzeLogToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.reflashToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.flashVirginDeviceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.RmsModeBtn = new LightedButton2.LightedButton2();
+            this.DcModeBtn = new LightedButton2.LightedButton2();
+            this.RmsLabel = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.Label_1ksps = new System.Windows.Forms.Label();
@@ -71,8 +76,6 @@
             this.FastUpdateBtn = new LightedButton2.LightedButton2();
             this.SlowUpdateBtn = new LightedButton2.LightedButton2();
             this.lightedButton22 = new LightedButton2.LightedButton2();
-            this.analysisToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.analyzeLogToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -223,6 +226,21 @@
             this.calibrateToolStripMenuItem.Text = "Calibrate";
             this.calibrateToolStripMenuItem.Click += new System.EventHandler(this.calibrateToolStripMenuItem_Click);
             // 
+            // analysisToolStripMenuItem
+            // 
+            this.analysisToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.analyzeLogToolStripMenuItem});
+            this.analysisToolStripMenuItem.Name = "analysisToolStripMenuItem";
+            this.analysisToolStripMenuItem.Size = new System.Drawing.Size(62, 20);
+            this.analysisToolStripMenuItem.Text = "Analysis";
+            // 
+            // analyzeLogToolStripMenuItem
+            // 
+            this.analyzeLogToolStripMenuItem.Name = "analyzeLogToolStripMenuItem";
+            this.analyzeLogToolStripMenuItem.Size = new System.Drawing.Size(138, 22);
+            this.analyzeLogToolStripMenuItem.Text = "Analyze Log";
+            this.analyzeLogToolStripMenuItem.Click += new System.EventHandler(this.analyzeLogToolStripMenuItem_Click);
+            // 
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -266,6 +284,9 @@
             // 
             this.panel1.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("panel1.BackgroundImage")));
             this.panel1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.panel1.Controls.Add(this.RmsModeBtn);
+            this.panel1.Controls.Add(this.DcModeBtn);
+            this.panel1.Controls.Add(this.RmsLabel);
             this.panel1.Controls.Add(this.label12);
             this.panel1.Controls.Add(this.label4);
             this.panel1.Controls.Add(this.Label_1ksps);
@@ -298,6 +319,63 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(847, 445);
             this.panel1.TabIndex = 39;
+            // 
+            // RmsModeBtn
+            // 
+            this.RmsModeBtn.AllowAllOff = false;
+            this.RmsModeBtn.AllowFadeToOff = false;
+            this.RmsModeBtn.BackColor = System.Drawing.Color.Transparent;
+            this.RmsModeBtn.FillColor = System.Drawing.Color.Transparent;
+            this.RmsModeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.RmsModeBtn.GroupName = "Mode";
+            this.RmsModeBtn.LineThick = 1F;
+            this.RmsModeBtn.Location = new System.Drawing.Point(784, 350);
+            this.RmsModeBtn.Name = "RmsModeBtn";
+            this.RmsModeBtn.OffColor = System.Drawing.Color.DarkGreen;
+            this.RmsModeBtn.On = false;
+            this.RmsModeBtn.OnColor = System.Drawing.Color.LimeGreen;
+            this.RmsModeBtn.OneShot = false;
+            this.RmsModeBtn.OneShotInterval = 100;
+            this.RmsModeBtn.OptionMenuIndicator = false;
+            this.RmsModeBtn.Size = new System.Drawing.Size(50, 30);
+            this.RmsModeBtn.TabIndex = 54;
+            this.RmsModeBtn.TextWhenOff = "RMS";
+            this.RmsModeBtn.TextWhenOn = "RMS";
+            this.RmsModeBtn.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.RmsButton_Pressed);
+            // 
+            // DcModeBtn
+            // 
+            this.DcModeBtn.AllowAllOff = false;
+            this.DcModeBtn.AllowFadeToOff = false;
+            this.DcModeBtn.BackColor = System.Drawing.Color.Transparent;
+            this.DcModeBtn.FillColor = System.Drawing.Color.Transparent;
+            this.DcModeBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.DcModeBtn.GroupName = "Mode";
+            this.DcModeBtn.LineThick = 1F;
+            this.DcModeBtn.Location = new System.Drawing.Point(725, 350);
+            this.DcModeBtn.Name = "DcModeBtn";
+            this.DcModeBtn.OffColor = System.Drawing.Color.DarkGreen;
+            this.DcModeBtn.On = true;
+            this.DcModeBtn.OnColor = System.Drawing.Color.LimeGreen;
+            this.DcModeBtn.OneShot = false;
+            this.DcModeBtn.OneShotInterval = 100;
+            this.DcModeBtn.OptionMenuIndicator = false;
+            this.DcModeBtn.Size = new System.Drawing.Size(50, 30);
+            this.DcModeBtn.TabIndex = 53;
+            this.DcModeBtn.TextWhenOff = "DC";
+            this.DcModeBtn.TextWhenOn = "DC";
+            this.DcModeBtn.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.DcBtn_Pressed);
+            // 
+            // label13
+            // 
+            this.RmsLabel.AutoSize = true;
+            this.RmsLabel.BackColor = System.Drawing.Color.Transparent;
+            this.RmsLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.RmsLabel.Location = new System.Drawing.Point(409, 119);
+            this.RmsLabel.Name = "label13";
+            this.RmsLabel.Size = new System.Drawing.Size(113, 20);
+            this.RmsLabel.TabIndex = 52;
+            this.RmsLabel.Text = "RMS 15 KSPS";
             // 
             // label12
             // 
@@ -337,7 +415,7 @@
             this.Label_2p5sps.AutoSize = true;
             this.Label_2p5sps.BackColor = System.Drawing.Color.Transparent;
             this.Label_2p5sps.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Label_2p5sps.Location = new System.Drawing.Point(520, 119);
+            this.Label_2p5sps.Location = new System.Drawing.Point(528, 119);
             this.Label_2p5sps.Name = "Label_2p5sps";
             this.Label_2p5sps.Size = new System.Drawing.Size(67, 20);
             this.Label_2p5sps.TabIndex = 47;
@@ -444,7 +522,7 @@
             this.lightedButton210.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lightedButton210.GroupName = null;
             this.lightedButton210.LineThick = 1F;
-            this.lightedButton210.Location = new System.Drawing.Point(784, 191);
+            this.lightedButton210.Location = new System.Drawing.Point(784, 193);
             this.lightedButton210.Name = "lightedButton210";
             this.lightedButton210.OffColor = System.Drawing.Color.DarkGreen;
             this.lightedButton210.On = false;
@@ -467,7 +545,7 @@
             this.SetRelBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.SetRelBtn.GroupName = null;
             this.SetRelBtn.LineThick = 1F;
-            this.SetRelBtn.Location = new System.Drawing.Point(725, 191);
+            this.SetRelBtn.Location = new System.Drawing.Point(725, 193);
             this.SetRelBtn.Name = "SetRelBtn";
             this.SetRelBtn.OffColor = System.Drawing.Color.DarkGreen;
             this.SetRelBtn.On = false;
@@ -490,7 +568,7 @@
             this.lightedButton28.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lightedButton28.GroupName = "Range";
             this.lightedButton28.LineThick = 1F;
-            this.lightedButton28.Location = new System.Drawing.Point(725, 35);
+            this.lightedButton28.Location = new System.Drawing.Point(725, 31);
             this.lightedButton28.Name = "lightedButton28";
             this.lightedButton28.OffColor = System.Drawing.Color.DarkGreen;
             this.lightedButton28.On = false;
@@ -513,7 +591,7 @@
             this.lightedButton29.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lightedButton29.GroupName = "Range";
             this.lightedButton29.LineThick = 1F;
-            this.lightedButton29.Location = new System.Drawing.Point(784, 35);
+            this.lightedButton29.Location = new System.Drawing.Point(784, 31);
             this.lightedButton29.Name = "lightedButton29";
             this.lightedButton29.OffColor = System.Drawing.Color.DarkGreen;
             this.lightedButton29.On = true;
@@ -536,7 +614,7 @@
             this.lightedButton27.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lightedButton27.GroupName = null;
             this.lightedButton27.LineThick = 1F;
-            this.lightedButton27.Location = new System.Drawing.Point(784, 111);
+            this.lightedButton27.Location = new System.Drawing.Point(784, 109);
             this.lightedButton27.Name = "lightedButton27";
             this.lightedButton27.OffColor = System.Drawing.Color.DarkGreen;
             this.lightedButton27.On = false;
@@ -559,7 +637,7 @@
             this.FastUpdateBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.FastUpdateBtn.GroupName = "UpdateRate";
             this.FastUpdateBtn.LineThick = 1F;
-            this.FastUpdateBtn.Location = new System.Drawing.Point(725, 266);
+            this.FastUpdateBtn.Location = new System.Drawing.Point(725, 272);
             this.FastUpdateBtn.Name = "FastUpdateBtn";
             this.FastUpdateBtn.OffColor = System.Drawing.Color.DarkGreen;
             this.FastUpdateBtn.On = false;
@@ -582,10 +660,10 @@
             this.SlowUpdateBtn.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.SlowUpdateBtn.GroupName = "UpdateRate";
             this.SlowUpdateBtn.LineThick = 1F;
-            this.SlowUpdateBtn.Location = new System.Drawing.Point(784, 266);
+            this.SlowUpdateBtn.Location = new System.Drawing.Point(784, 272);
             this.SlowUpdateBtn.Name = "SlowUpdateBtn";
             this.SlowUpdateBtn.OffColor = System.Drawing.Color.DarkGreen;
-            this.SlowUpdateBtn.On = true;
+            this.SlowUpdateBtn.On = false;
             this.SlowUpdateBtn.OnColor = System.Drawing.Color.LimeGreen;
             this.SlowUpdateBtn.OneShot = false;
             this.SlowUpdateBtn.OneShotInterval = 100;
@@ -605,7 +683,7 @@
             this.lightedButton22.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lightedButton22.GroupName = null;
             this.lightedButton22.LineThick = 1F;
-            this.lightedButton22.Location = new System.Drawing.Point(725, 111);
+            this.lightedButton22.Location = new System.Drawing.Point(725, 109);
             this.lightedButton22.Name = "lightedButton22";
             this.lightedButton22.OffColor = System.Drawing.Color.DarkGreen;
             this.lightedButton22.On = false;
@@ -618,21 +696,6 @@
             this.lightedButton22.TextWhenOff = "Reset";
             this.lightedButton22.TextWhenOn = "Reset";
             this.lightedButton22.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.lightedButton22_ButtonPressed);
-            // 
-            // analysisToolStripMenuItem
-            // 
-            this.analysisToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.analyzeLogToolStripMenuItem});
-            this.analysisToolStripMenuItem.Name = "analysisToolStripMenuItem";
-            this.analysisToolStripMenuItem.Size = new System.Drawing.Size(62, 20);
-            this.analysisToolStripMenuItem.Text = "Analysis";
-            // 
-            // analyzeLogToolStripMenuItem
-            // 
-            this.analyzeLogToolStripMenuItem.Name = "analyzeLogToolStripMenuItem";
-            this.analyzeLogToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.analyzeLogToolStripMenuItem.Text = "Analyze Log";
-            this.analyzeLogToolStripMenuItem.Click += new System.EventHandler(this.analyzeLogToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -708,6 +771,9 @@
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.ToolStripMenuItem analysisToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem analyzeLogToolStripMenuItem;
+        private System.Windows.Forms.Label RmsLabel;
+        private LightedButton2.LightedButton2 RmsModeBtn;
+        private LightedButton2.LightedButton2 DcModeBtn;
     }
 }
 

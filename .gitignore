@@ -4,6 +4,7 @@
 *.pdn
 *.ico
 *.png
+*.svg
 Exclude.txt
 Setup*/
 MSP430 Workspace - Copy*/

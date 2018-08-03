@@ -12,7 +12,7 @@ namespace QA350
         static public string CalibrationFile = DataFilePath + "CalibrationData.xml";
         static public string SettingsFile = DataFilePath + "QA350Settings.xml";
 
-        static public double Version = 1.70;
+        static public double Version = 1.702;
 
         static public Int32 RequiredFwVersion = 11;
     }

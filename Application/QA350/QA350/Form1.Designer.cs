@@ -41,7 +41,7 @@
             this.label9 = new System.Windows.Forms.Label();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.loggingToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.logToTextFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.calibrateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -76,6 +76,7 @@
             this.FastUpdateBtn = new LightedButton2.LightedButton2();
             this.SlowUpdateBtn = new LightedButton2.LightedButton2();
             this.lightedButton22 = new LightedButton2.LightedButton2();
+            this.logToBinaryFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -192,30 +193,31 @@
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.loggingToolStripMenuItem,
+            this.logToBinaryFileToolStripMenuItem,
+            this.logToTextFileToolStripMenuItem,
             this.toolStripMenuItem1,
             this.closeToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
             // 
-            // loggingToolStripMenuItem
+            // loggingBinaryToolStripMenuItem
             // 
-            this.loggingToolStripMenuItem.Enabled = false;
-            this.loggingToolStripMenuItem.Name = "loggingToolStripMenuItem";
-            this.loggingToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
-            this.loggingToolStripMenuItem.Text = "Logging";
-            this.loggingToolStripMenuItem.Click += new System.EventHandler(this.loggingToolStripMenuItem_Click);
+            this.logToTextFileToolStripMenuItem.Enabled = false;
+            this.logToTextFileToolStripMenuItem.Name = "loggingBinaryToolStripMenuItem";
+            this.logToTextFileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.logToTextFileToolStripMenuItem.Text = "Log to Text File";
+            this.logToTextFileToolStripMenuItem.Click += new System.EventHandler(this.loggingToolStripMenuItem_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(115, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(177, 6);
             // 
             // closeToolStripMenuItem
             // 
             this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            this.closeToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
+            this.closeToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.closeToolStripMenuItem.Text = "Close";
             this.closeToolStripMenuItem.Click += new System.EventHandler(this.closeToolStripMenuItem_Click);
             // 
@@ -366,13 +368,13 @@
             this.DcModeBtn.TextWhenOn = "DC";
             this.DcModeBtn.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.DcBtn_Pressed);
             // 
-            // label13
+            // RmsLabel
             // 
             this.RmsLabel.AutoSize = true;
             this.RmsLabel.BackColor = System.Drawing.Color.Transparent;
             this.RmsLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.RmsLabel.Location = new System.Drawing.Point(409, 119);
-            this.RmsLabel.Name = "label13";
+            this.RmsLabel.Name = "RmsLabel";
             this.RmsLabel.Size = new System.Drawing.Size(113, 20);
             this.RmsLabel.TabIndex = 52;
             this.RmsLabel.Text = "RMS 15 KSPS";
@@ -697,6 +699,14 @@
             this.lightedButton22.TextWhenOn = "Reset";
             this.lightedButton22.ButtonPressed += new System.EventHandler<LightedButton2.LightedButton2.ButtonPressedArgs>(this.lightedButton22_ButtonPressed);
             // 
+            // logToBinaryFileToolStripMenuItem
+            // 
+            this.logToBinaryFileToolStripMenuItem.Enabled = false;
+            this.logToBinaryFileToolStripMenuItem.Name = "logToBinaryFileToolStripMenuItem";
+            this.logToBinaryFileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.logToBinaryFileToolStripMenuItem.Text = "Log to Binary File";
+            this.logToBinaryFileToolStripMenuItem.Click += new System.EventHandler(this.loggingToolStripMenuItem_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -763,7 +773,7 @@
         private System.Windows.Forms.ToolStripMenuItem reflashToolStripMenuItem;
         private System.Windows.Forms.Label RelModeLabel;
         private System.Windows.Forms.ToolStripMenuItem flashVirginDeviceToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem loggingToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem logToTextFileToolStripMenuItem;
         private System.Windows.Forms.Label LoggingLabel;
         private System.Windows.Forms.Label Label_1ksps;
         private System.Windows.Forms.Label Label_2p5sps;
@@ -774,6 +784,7 @@
         private System.Windows.Forms.Label RmsLabel;
         private LightedButton2.LightedButton2 RmsModeBtn;
         private LightedButton2.LightedButton2 DcModeBtn;
+        private System.Windows.Forms.ToolStripMenuItem logToBinaryFileToolStripMenuItem;
     }
 }
 

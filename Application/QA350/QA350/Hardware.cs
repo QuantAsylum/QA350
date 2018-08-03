@@ -251,8 +251,11 @@ namespace QA350
 
         static public void SetMode(Mode mode)
         {
-            USBSendData(new byte[] { 12, (byte)mode });
-            Mode = mode;
+            if (Msp430 != null)
+            {
+                USBSendData(new byte[] { 12, (byte)mode });
+                Mode = mode;
+            }
         }
 
         static public Mode GetMode()

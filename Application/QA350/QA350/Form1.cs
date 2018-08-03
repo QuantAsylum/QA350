@@ -145,7 +145,7 @@ namespace QA350
 
             InitGraphs();
 
-            Text += "  (" + Constants.Version.ToString("0.00") + ")";
+            Text += "  (" + Constants.Version.ToString("0.000") + ")";
 
             // Not ready yet
             analysisToolStripMenuItem.Visible = false;
@@ -276,7 +276,8 @@ namespace QA350
                 }
 
                 toolStripStatusLabel1.Text = string.Format("Opened. (FW version = {0})", fwVersion.ToString());
-                loggingToolStripMenuItem.Enabled = true;
+                logToTextFileToolStripMenuItem.Enabled = true;
+                logToBinaryFileToolStripMenuItem.Enabled = true;
                 SetLowRange();
 
                 SetSampleRate(SampleRateEnum.Slow_2p5Hz);
@@ -303,7 +304,8 @@ namespace QA350
             AcqTimer.Enabled = false;
             label3.Text = "--CONNECTING--";
             toolStripStatusLabel1.Text = "Disconnected...please plug in QA350";
-            loggingToolStripMenuItem.Enabled = false;
+            logToTextFileToolStripMenuItem.Enabled = false;
+            logToBinaryFileToolStripMenuItem.Enabled = false;
         }
 
         /// <summary>
@@ -347,12 +349,12 @@ namespace QA350
             if (LoggingEnabled)
             {
                 LoggingLabel.Visible = true;
-                loggingToolStripMenuItem.Checked = true;
+                //logToTextFileToolStripMenuItem.Checked = true;
             }
             else
             {
                 LoggingLabel.Visible = false;
-                loggingToolStripMenuItem.Checked = false;
+                //logToTextFileToolStripMenuItem.Checked = false;
             }
         }
 
@@ -591,7 +593,7 @@ namespace QA350
             }
             else if (Hardware.GetMode() == Mode.RMS)
             {
-                v = v * 1.0233;
+                v = v * 1.02315549;
             }
 
             v *= AppSettings.Math;
@@ -770,7 +772,26 @@ namespace QA350
         /// <param name="e"></param>
         private void loggingToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (loggingToolStripMenuItem.Checked == false)
+            bool isBinary = false;
+
+            ToolStripMenuItem mi = (ToolStripMenuItem)sender;
+            ToolStripMenuItem otherMi = null;
+            if (mi == logToBinaryFileToolStripMenuItem)
+            {
+                isBinary = true;
+                otherMi = logToTextFileToolStripMenuItem;
+            }
+            else if (mi == logToTextFileToolStripMenuItem)
+            {
+                isBinary = false;
+                otherMi = logToBinaryFileToolStripMenuItem;
+            }
+            else
+            {
+                throw new NotImplementedException("Unknown menu type in loggingToolStripMenuItem_Click");
+            }
+
+            if (mi.Checked == false)
             {
                 SaveFileDialog sfd = new SaveFileDialog();
                 sfd.InitialDirectory = Constants.DataFilePath;
@@ -778,7 +799,8 @@ namespace QA350
 
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
-                    loggingToolStripMenuItem.Checked = true;
+                    mi.Checked = true;
+                    otherMi.Enabled = false;
                     LoggingEnabled = true;
                     LogFile = sfd.FileName;
 
@@ -791,19 +813,22 @@ namespace QA350
                         SampleRate = SampleRateEnum.Fast_1KHz;
                     }
 
-                    new Thread(LoggingThread).Start();
+                    if (isBinary)
+                        new Thread(LoggingThreadBinary).Start();
+                    else
+                        new Thread(LoggingThreadText).Start();
 
-                    // While logging, the logging speed cannot be changed
+                    // While logging, the logging speed cannot be changed and the DC/RMS setting cannot be changed
+                    DcModeBtn.Enabled = false;
+                    RmsModeBtn.Enabled = false;
                     SlowUpdateBtn.Enabled = false;
                     FastUpdateBtn.Enabled = false;
                 }
             }
             else
             {
-                loggingToolStripMenuItem.Checked = false;
                 LoggingEnabled = false;
-                SlowUpdateBtn.Enabled = true;
-                FastUpdateBtn.Enabled = true;
+                LoggingDone();
             }
         }
 
@@ -811,14 +836,14 @@ namespace QA350
         /// This thread is spun up when logging is turned on. If there's a problem during logging 
         /// of any kind (file access, bad communication with hardware, etc) then this thread will exit. 
         /// </summary>
-        private void LoggingThread()
+        private void LoggingThreadBinary()
         {
             float dt;
             int sample = 0;
             byte LastSequence = 0;
             bool firstRead = true;
 
-            Debug.WriteLine("Logging thread started");
+            Debug.WriteLine("Binary logging thread started");
 
             FileStream fs = null;
             BinaryWriter sw = null;
@@ -839,12 +864,13 @@ namespace QA350
                     StreamSample[] buffer = new StreamSample[0];
                     try
                     {
-                        while (Hardware.GetFifoDepth() < 12)
+                        while ( (Hardware.GetFifoDepth() < 12) && (LoggingEnabled) )
                         {
                             Thread.Sleep(5);
                         }
 
-                        buffer = Hardware.ReadVoltageStream();
+                        if (LoggingEnabled)
+                            buffer = Hardware.ReadVoltageStream();
                     }
                     catch
                     {
@@ -885,7 +911,7 @@ namespace QA350
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Logging has stopped: " + ex.Message);
+                MessageBox.Show("Binary logging has stopped: " + ex.Message);
             }
         
             if (sw != null)
@@ -900,7 +926,111 @@ namespace QA350
             }
 
             LoggingEnabled = false;
-            Debug.WriteLine("Logging thread exited. {0} samples written.", sample);
+            Debug.WriteLine("Binary logging thread exited. {0} samples written.", sample);
+            LoggingDone();
+        }
+
+        private void LoggingThreadText()
+        {
+            float dt;
+            int sample = 0;
+            byte LastSequence = 0;
+            bool firstRead = true;
+
+            Debug.WriteLine("Text logging thread started");
+
+            StreamWriter sw = null;
+
+            try
+            {
+                dt = (float)(1.0 / GetSampleRate());
+
+                sw = new StreamWriter(LogFile);
+
+                // Barker
+                sw.WriteLine("Logging file Created on " + DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToShortTimeString());
+                sw.WriteLine("Sample Rate {0} sps", GetSampleRate());
+                sw.WriteLine("Sample Time (seconds), Value");
+
+                while (LoggingEnabled)
+                {
+                    StreamSample[] buffer = new StreamSample[0];
+                    try
+                    {
+                        while ( (Hardware.GetFifoDepth() < 12) && (LoggingEnabled) )
+                        {
+                            Thread.Sleep(5);
+                        }
+
+                        if (LoggingEnabled)
+                            buffer = Hardware.ReadVoltageStream();
+                    }
+                    catch
+                    {
+                        break;
+                    }
+
+                    // Sync the sequence ID on the first read
+                    if (firstRead)
+                    {
+                        firstRead = false;
+
+                        LastSequence = (byte)(buffer[0].SequenceId - (byte)1);
+                    }
+
+                    // If nothing read, then bail
+                    if (buffer.Length == 0)
+                    {
+                        break;
+                    }
+
+                    // If we're missing a block of data, write null samples to indicate such. 
+                    while ((byte)(LastSequence + 1) != buffer[0].SequenceId)
+                    {
+                        //sw.Write(sample++ * dt);
+                        sw.WriteLine("{0}, {1}", sample++ * dt, "MISSED DATA");
+                        ++LastSequence;
+                    }
+
+                    for (int i = 0; i < buffer.Length; i++)
+                    {
+                        bool ovf = false;
+                        sw.WriteLine("{0:0.000},{1:N6}", sample++ * dt, ConvertCountsToVoltage(buffer[i].Value, ref ovf));
+                        //sw.Write(sample++ * dt);
+                        //tw.Write((float)ConvertCountsToVoltage(buffer[i].Value, ref ovf));
+                        LastSequence = buffer[i].SequenceId;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Text logging has stopped: " + ex.Message);
+            }
+
+            if (sw != null)
+            {
+                sw.Flush();
+                sw.Close();
+            }
+
+            LoggingEnabled = false;
+            Debug.WriteLine("Text logging thread exited. {0} samples written.", sample);
+            LoggingDone();
+        }
+
+        private void LoggingDone()
+        {
+            Invoke((MethodInvoker)delegate 
+            {
+                DcModeBtn.Enabled = true;
+                RmsModeBtn.Enabled = true;
+                SlowUpdateBtn.Enabled = true;
+                FastUpdateBtn.Enabled = true;
+                logToBinaryFileToolStripMenuItem.Enabled = true;
+                logToBinaryFileToolStripMenuItem.Checked = false;
+                logToTextFileToolStripMenuItem.Enabled = true;
+                logToTextFileToolStripMenuItem.Checked = false;
+            });
         }
 
         /// <summary>
@@ -994,10 +1124,11 @@ namespace QA350
             ResetStats();
             Hardware.SetMode(Mode.DC);
             RmsLabel.Visible = false;
-            FastUpdateBtn.Enabled = true;
-            SlowUpdateBtn.Enabled = true;
+            SetSampleRate(SampleRateEnum.Slow_2p5Hz);
+            //FastUpdateBtn.Enabled = true;
+            //SlowUpdateBtn.Enabled = true;
             SlowUpdateBtn.On = true;
-            Label_1ksps.Visible = true;
+            //Label_1ksps.Visible = true;
         }
     }
 }

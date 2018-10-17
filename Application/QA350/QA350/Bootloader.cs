@@ -14,6 +14,8 @@ namespace QA350
 
     static class Bootloader
     {
+        public delegate void FlashStatusCallback(string s);
+
         // Note, there are two ways to enter the BSL on the MSP. The first is by having the firmware code jump to a specific 
         // vector and start executing. The second is if the ISR vectors are unitialized. 
         // The MSP430F5529 only has minimal BSL functionality, and thus a ram-based BSL must be downloaded. The minimal
@@ -27,7 +29,11 @@ namespace QA350
         // 4. Program file. Note that ideally the reset vector (@0xFFFE-0xFFFF) should be the last thing programmed as this will ensure
         //    partial programming failures will still fall back to the BSL
 
-        static public void EnterBootloader()
+        /// <summary>
+        /// Loads external bootstrap file, verifies needed boot files are present, and updates
+        /// internal flash image.
+        /// </summary>
+        static public void EnterBootloader(FlashStatusCallback statusUpdate)
         {
             const string bootstrapFile = "RAM_BSL.00.07.08.38.bsl";
 
@@ -37,6 +43,8 @@ namespace QA350
             ofd.CheckFileExists = true;
             ofd.FileName = "QA350.boot";
             ofd.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+            statusUpdate?.Invoke("Wait...");
 
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 return;
@@ -81,7 +89,7 @@ namespace QA350
                 // Once we are mass-erased, then the bootloader will always run at start
 
                 // Load ram-based BSL
-                WriteFlash(bootstrapFile, true);
+                WriteFlash(bootstrapFile, statusUpdate, true);
 
                 // Run ram-based BSL
                 SetPC(0x2504);
@@ -94,7 +102,7 @@ namespace QA350
                 MassErase();
                 
                 // Write the new image
-                WriteFlash(ofd.FileName, false);
+                WriteFlash(ofd.FileName, statusUpdate, false);
 
                 return;
             }
@@ -207,7 +215,7 @@ namespace QA350
         /// <param name="fileName"></param>
         /// <param name="fastWrite"></param>
         /// <returns></returns>
-        static bool WriteFlash(string fileName, Boolean fastWrite)
+        static bool WriteFlash(string fileName, FlashStatusCallback statusUpdate, Boolean fastWrite)
         {
             byte[] lastArray = null;
             int lastAddress = 0;
@@ -266,6 +274,8 @@ namespace QA350
                         if (WriteBytes(address, data))
                         {
                             Debug.WriteLine(string.Format("Line: {0}  Address: 0x{1:X}  Len: {2}", i, address, data.Length));
+                            if ( (i % 10) == 0)
+                                statusUpdate?.Invoke(i.ToString() + " of " + lines.Length + " blocks");
                         }
                         else
                         {
@@ -285,6 +295,7 @@ namespace QA350
                     Debug.WriteLine(string.Format("Reset vector written. Address: 0x{0:X}  Len: {1}", lastAddress, lastArray.Length));
                     Thread.Sleep(100);
                     SetPC(resetAddr);
+                    statusUpdate?.Invoke("Flash updated");
                 }
                 else
                     Debug.WriteLine("Failed to write reset vector");

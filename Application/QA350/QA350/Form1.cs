@@ -728,6 +728,15 @@ namespace QA350
             Close();
         }
 
+        internal void FlashStatusUpdate(string status)
+        {
+            Invoke((System.Windows.Forms.MethodInvoker)delegate
+            {
+                toolStripStatusLabel1.Text = status;
+                statusStrip1.Update();
+            });
+        }
+
         /// <summary>
         /// Called when user selects the menu item to reflash
         /// </summary>
@@ -754,7 +763,7 @@ namespace QA350
             LEDKickerTimer.Enabled = false;
             Hardware.EnterBSL();
             Thread.Sleep(2000);
-            Bootloader.EnterBootloader();
+            Bootloader.EnterBootloader(FlashStatusUpdate);
 
             MessageBox.Show("Restart the application and replug the hardware");
             Close();
@@ -768,7 +777,7 @@ namespace QA350
         /// <param name="e"></param>
         private void flashVirginDeviceToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Bootloader.EnterBootloader();
+            Bootloader.EnterBootloader(FlashStatusUpdate);
         }
 
         /// <summary>

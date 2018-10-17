@@ -1,0 +1,3 @@
+﻿1.72 (Oct 2018)
+- Fixed bug where there were problems with cal data being used before it was created
+- Added a 'secret' key sequence that would allow you to enter factory mode so that virgin devices could be flashed from retail builds

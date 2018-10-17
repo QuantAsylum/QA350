@@ -1,6 +1,7 @@
 ﻿using HidLibrary;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -165,6 +166,7 @@ namespace QA350
                 val &= 0x00FFFFFF;
             }
 
+            Debug.WriteLine("Val: " + val.ToString() + " " + val.ToString("X"));
             return unchecked((int)val);
         }
 

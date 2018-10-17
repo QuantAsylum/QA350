@@ -135,10 +135,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="QA350Icon.ico" />
+    <Content Include="Releases.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\DLL\LightedButton2\LightedButton2.csproj">
-      <Project>{E6E01AEB-36EE-4C23-B404-B3BB15A41862}</Project>
+      <Project>{e6e01aeb-36ee-4c23-b404-b3bb15a41862}</Project>
       <Name>LightedButton2</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\HidLibrary\HidLibrary.csproj">

@@ -48,6 +48,11 @@ namespace QA350
         double UserOffset;
 
         /// <summary>
+        /// Used for entering factory mode
+        /// </summary>
+        int FactoryModeKeyIndex = 0;
+
+        /// <summary>
         /// Holds the data that is graphed in the left hand graph (v versus t)
         /// </summary>
         PointPairList GraphData = new PointPairList();
@@ -105,8 +110,6 @@ namespace QA350
             AppSettings.MathLabel = "";
             label12.Visible = false;
 
-            TryConnect();
-
             // If needed directories aren't present, create them
             if (Directory.Exists(Constants.DataFilePath) == false)
                 Directory.CreateDirectory(Constants.DataFilePath);
@@ -149,6 +152,9 @@ namespace QA350
 
             // Not ready yet
             analysisToolStripMenuItem.Visible = false;
+
+            LEDKickerTimer.Enabled = true;
+            TryConnect();
         }
 
         /// <summary>
@@ -1129,6 +1135,29 @@ namespace QA350
             //SlowUpdateBtn.Enabled = true;
             SlowUpdateBtn.On = true;
             //Label_1ksps.Visible = true;
+        }
+
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            string factoryModeString = "QA350";
+
+            if (Convert.ToChar(e.KeyCode) == factoryModeString[FactoryModeKeyIndex])
+            {
+                ++FactoryModeKeyIndex;
+
+                if (FactoryModeKeyIndex == factoryModeString.Length)
+                {
+                    // Enable certain menu items
+                    FactoryModeKeyIndex = 0;
+                    flashVirginDeviceToolStripMenuItem.Visible = true;
+                    Console.Beep();
+                }
+            }
+            else
+            {
+                FactoryModeKeyIndex = 0;
+            }
+
         }
     }
 }

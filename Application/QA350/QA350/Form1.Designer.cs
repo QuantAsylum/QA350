@@ -43,6 +43,7 @@
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.logToBinaryFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.logToTextFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.logToTextAtArbitraryIntervalToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.calibrateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -194,6 +195,7 @@
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.logToBinaryFileToolStripMenuItem,
             this.logToTextFileToolStripMenuItem,
+            this.logToTextAtArbitraryIntervalToolStripMenuItem,
             this.toolStripMenuItem1,
             this.closeToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
@@ -204,7 +206,7 @@
             // 
             this.logToBinaryFileToolStripMenuItem.Enabled = false;
             this.logToBinaryFileToolStripMenuItem.Name = "logToBinaryFileToolStripMenuItem";
-            this.logToBinaryFileToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
+            this.logToBinaryFileToolStripMenuItem.Size = new System.Drawing.Size(222, 22);
             this.logToBinaryFileToolStripMenuItem.Text = "Log to Binary File";
             this.logToBinaryFileToolStripMenuItem.Click += new System.EventHandler(this.loggingToolStripMenuItem_Click);
             // 
@@ -212,19 +214,27 @@
             // 
             this.logToTextFileToolStripMenuItem.Enabled = false;
             this.logToTextFileToolStripMenuItem.Name = "logToTextFileToolStripMenuItem";
-            this.logToTextFileToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
+            this.logToTextFileToolStripMenuItem.Size = new System.Drawing.Size(222, 22);
             this.logToTextFileToolStripMenuItem.Text = "Log to Text File";
             this.logToTextFileToolStripMenuItem.Click += new System.EventHandler(this.loggingToolStripMenuItem_Click);
+            // 
+            // logToTextAtArbitraryIntervalToolStripMenuItem
+            // 
+            this.logToTextAtArbitraryIntervalToolStripMenuItem.Enabled = false;
+            this.logToTextAtArbitraryIntervalToolStripMenuItem.Name = "logToTextAtArbitraryIntervalToolStripMenuItem";
+            this.logToTextAtArbitraryIntervalToolStripMenuItem.Size = new System.Drawing.Size(222, 22);
+            this.logToTextAtArbitraryIntervalToolStripMenuItem.Text = "Log Text at Arbitrary Interval";
+            this.logToTextAtArbitraryIntervalToolStripMenuItem.Click += new System.EventHandler(this.loggingToolStripMenuItem_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(162, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(219, 6);
             // 
             // closeToolStripMenuItem
             // 
             this.closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-            this.closeToolStripMenuItem.Size = new System.Drawing.Size(165, 22);
+            this.closeToolStripMenuItem.Size = new System.Drawing.Size(222, 22);
             this.closeToolStripMenuItem.Text = "Close";
             this.closeToolStripMenuItem.Click += new System.EventHandler(this.closeToolStripMenuItem_Click);
             // 
@@ -786,6 +796,7 @@
         private LightedButton2.LightedButton2 RmsModeBtn;
         private LightedButton2.LightedButton2 DcModeBtn;
         private System.Windows.Forms.ToolStripMenuItem logToBinaryFileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem logToTextAtArbitraryIntervalToolStripMenuItem;
     }
 }
 

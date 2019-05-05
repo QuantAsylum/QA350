@@ -6,25 +6,23 @@ using System.Threading.Tasks;
 
 namespace QA350
 {
+    public enum YAxisSettings {Ppm, Mv, Uv };
+    public enum HistoBinSettings { Mv, Uv }
     /// <summary>
     /// Class to hold vars we'd like to persist
     /// </summary>
     public class Settings
     {
         // Y Axis Settings V versus T graph
-        internal bool YAxisIsPPM = true;
+        public YAxisSettings YAxisSetting = YAxisSettings.Ppm;
         public int YAxisPPMperDiv = 10;
-        public bool YAxisIsMV = false;
         public int YAxisMVperDiv = 1;
-        public bool YAxisIsUV = false;
         public int YAxisUVPerDiv = 10;
 
-
         // Bin Size Histogram
+        public HistoBinSettings HistoBinSetting;
         public int BinCount = 100;
-        public bool HistoBinIsMV = false;
         public int HistoBinInMV = 1;
-        public bool HistoBinIsUV = true;
         public int HistoBinInUV = 10;
 
         // Time
@@ -33,5 +31,7 @@ namespace QA350
         // Math
         public double Math = 1;
         public string MathLabel = "";
+
+        public int LoggingIntervalSec = 10;
     }
 }

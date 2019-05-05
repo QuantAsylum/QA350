@@ -29,17 +29,32 @@ namespace QA350
 
         private void DlgEditStats_Load(object sender, EventArgs e)
         {
-            if (AppSettings.YAxisIsPPM)
-                radioButton1.Checked = true;
-            if (AppSettings.YAxisIsMV)
-                radioButton2.Checked = true;
-            if (AppSettings.YAxisIsUV)
-                radioButton3.Checked = true;
+            switch (AppSettings.YAxisSetting)
+            {
+                case YAxisSettings.Ppm:
+                    radioButton1.Checked = true;
+                    break;
+                case YAxisSettings.Mv:
+                    radioButton2.Checked = true;
+                    break;
+                case YAxisSettings.Uv:
+                    radioButton3.Checked = true;
+                    break;
+                default:
+                    throw new NotImplementedException("DlgEditStats_Load()");
+            }
 
-            if (AppSettings.HistoBinIsMV)
-                radioButton5.Checked = true;
-            if (AppSettings.HistoBinIsUV)
-                radioButton4.Checked = true;
+            switch (AppSettings.HistoBinSetting)
+            {
+                case HistoBinSettings.Mv:
+                    radioButton5.Checked = true;
+                    break;
+                case HistoBinSettings.Uv:
+                    radioButton4.Checked = true;
+                    break;
+                default:
+                    throw new NotImplementedException("DlgEditStats_Load()");
+            }
 
             NumericIgnoreUpdates = true;
             numericUpDown1.Value = Convert.ToDecimal(AppSettings.YAxisPPMperDiv);
@@ -62,22 +77,23 @@ namespace QA350
         // OK button
         private void button4_Click(object sender, EventArgs e)
         {
-            AppSettings.YAxisIsPPM = false;
-            AppSettings.YAxisIsMV = false;
-            AppSettings.YAxisIsUV = false;
-            AppSettings.HistoBinIsMV = false;
-            AppSettings.HistoBinIsUV = false;
-
             if (radioButton1.Checked)
-                AppSettings.YAxisIsPPM = true;
+            {
+                AppSettings.YAxisSetting = YAxisSettings.Ppm;
+            }
             if (radioButton2.Checked)
-                AppSettings.YAxisIsMV = true;
+            {
+                AppSettings.YAxisSetting = YAxisSettings.Mv;
+            }
             if (radioButton3.Checked)
-                AppSettings.YAxisIsUV = true;
+            {
+                AppSettings.YAxisSetting = YAxisSettings.Uv;
+            }
+
             if (radioButton4.Checked)
-                AppSettings.HistoBinIsUV = true;
+                AppSettings.HistoBinSetting = HistoBinSettings.Uv;
             if (radioButton5.Checked)
-                AppSettings.HistoBinIsMV = true;
+                AppSettings.HistoBinSetting = HistoBinSettings.Mv;
 
             AppSettings.YAxisPPMperDiv = Convert.ToInt32(numericUpDown1.Value);
             AppSettings.YAxisMVperDiv = Convert.ToInt32(numericUpDown2.Value);
@@ -97,10 +113,7 @@ namespace QA350
         // Set to 10 PPM/div button
         private void button1_Click(object sender, EventArgs e)
         {
-            AppSettings.YAxisIsPPM = true;
-            AppSettings.YAxisIsMV = false;
-            AppSettings.YAxisIsUV = false;
-
+            AppSettings.YAxisSetting = YAxisSettings.Ppm;
             AppSettings.YAxisPPMperDiv = 10;
 
             radioButton1.Checked = true;
@@ -110,9 +123,7 @@ namespace QA350
         // Set to 10 uV/div
         private void button2_Click(object sender, EventArgs e)
         {
-            AppSettings.YAxisIsPPM = false;
-            AppSettings.YAxisIsMV = false;
-            AppSettings.YAxisIsUV = true;
+            AppSettings.YAxisSetting = YAxisSettings.Uv;
 
             AppSettings.YAxisUVPerDiv = 10;
 
@@ -124,8 +135,7 @@ namespace QA350
         // Set histo to 10uV/bin
         private void button3_Click(object sender, EventArgs e)
         {
-            AppSettings.HistoBinIsMV = false;
-            AppSettings.HistoBinIsUV = true;
+            AppSettings.HistoBinSetting = HistoBinSettings.Uv;
 
             AppSettings.YAxisUVPerDiv = 10;
 

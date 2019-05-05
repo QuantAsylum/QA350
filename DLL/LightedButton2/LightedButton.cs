@@ -336,32 +336,6 @@ namespace LightedButton2
             bmp = (Bitmap)ResizeImage(bmp, new Size(this.Width, this.Height));
 
             return bmp;
-
-            // Faster code. See http://www.codeproject.com/KB/GDI-plus/csharpgraphicfilters11.aspx
-            if (false)
-            {
-                BitmapData bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-                int stride = bmpData.Stride;
-                System.IntPtr Scan0 = bmpData.Scan0;
-
-                //unsafe
-                {
-                    for (int i = 0; i < bmp.Width; i++)
-                    {
-                        for (int j = 0; j < bmp.Height; j++)
-                        {
-                            Color maskColor = bmp.GetPixel(i, j);
-                            float lightness = maskColor.GetBrightness();
-                            Color newColor = Color.FromArgb(maskColor.A, (int)(color.R * lightness), (int)(color.G * lightness), (int)(color.B * lightness));
-
-                            bmp.SetPixel(i, j, newColor);
-                        }
-                    }
-                }
-
-                bmp = (Bitmap)ResizeImage(bmp, new Size(this.Width, this.Height));
-                return bmp;
-            }
         }
 
         /// <summary>

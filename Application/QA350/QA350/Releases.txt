@@ -1,4 +1,9 @@
-﻿1.721 (Oct 2018)
+﻿1.75 (May 2018)
+- Fixed bug where axis settings wasn't persisting correctly
+- Added ability to log at arbitrary intervals. This was for user DM, who needs the ability to log for days at a time
+- There is an offset present when switching between fast and slow modes, and the cause hasn't yet been determined.
+
+1.721 (Oct 2018)
 - Fixed bug where there were problems with cal data being used before it was created
 - Added a 'secret' key sequence that would allow you to enter factory mode so that virgin devices could be flashed from retail builds
 - Added status bar update on flash progress

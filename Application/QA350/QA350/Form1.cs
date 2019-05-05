@@ -6,6 +6,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Text;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -55,7 +56,7 @@ namespace QA350
         /// <summary>
         /// Holds the data that is graphed in the left hand graph (v versus t)
         /// </summary>
-        PointPairList GraphData = new PointPairList(); 
+        PointPairList GraphData = new PointPairList();
         DateTime StartTime;
 
         [System.Runtime.InteropServices.DllImport("gdi32.dll")]
@@ -69,7 +70,7 @@ namespace QA350
         Font LCDFontSmall;
 
         // Log file
-        enum SampleRateEnum { Fast_1KHz, Slow_2p5Hz}
+        enum SampleRateEnum { Fast_1KHz, Slow_2p5Hz }
         SampleRateEnum SampleRate = SampleRateEnum.Slow_2p5Hz;
         bool LoggingEnabled = false;
         string LogFile = "";
@@ -172,11 +173,11 @@ namespace QA350
 
             try
             {
-                File.WriteAllText(Constants.CalibrationFile, SerDes.Serialize(CalData));                
+                File.WriteAllText(Constants.CalibrationFile, SerDes.Serialize(CalData));
             }
             catch (Exception ex)
             {
-                MessageBox.Show("There was a problem writing the calibration data");
+                MessageBox.Show("There was a problem writing the calibration data: " + ex.Message);
             }
 
             try
@@ -185,7 +186,7 @@ namespace QA350
             }
             catch (Exception ex)
             {
-                MessageBox.Show("There was a problem writing the settings data");
+                MessageBox.Show("There was a problem writing the settings data: " + ex.Message);
             }
 
             Hardware.Close();
@@ -260,7 +261,7 @@ namespace QA350
             zedGraphControl2.GraphPane.XAxis.Color = Color.LimeGreen;
             zedGraphControl2.GraphPane.YAxis.Color = Color.LimeGreen;
             zedGraphControl2.GraphPane.Title.FontSpec.FontColor = Color.LimeGreen;
-            zedGraphControl2.GraphPane.Title.FontSpec.Size = 30; 
+            zedGraphControl2.GraphPane.Title.FontSpec.Size = 30;
             zedGraphControl2.GraphPane.Title.Text = "---";
             zedGraphControl2.GraphPane.XAxis.Title.IsVisible = false;
             zedGraphControl2.GraphPane.YAxis.Title.IsVisible = false;
@@ -284,6 +285,7 @@ namespace QA350
                 toolStripStatusLabel1.Text = string.Format("Opened. (FW version = {0})", fwVersion.ToString());
                 logToTextFileToolStripMenuItem.Enabled = true;
                 logToBinaryFileToolStripMenuItem.Enabled = true;
+                logToTextAtArbitraryIntervalToolStripMenuItem.Enabled = true;
                 SetLowRange();
 
                 SetSampleRate(SampleRateEnum.Slow_2p5Hz);
@@ -296,7 +298,7 @@ namespace QA350
             else
             {
                 toolStripStatusLabel1.Text = "Open failed...please plug in QA350";
-                AcqTimer.Enabled = false; 
+                AcqTimer.Enabled = false;
             }
         }
 
@@ -312,6 +314,7 @@ namespace QA350
             toolStripStatusLabel1.Text = "Disconnected...please plug in QA350";
             logToTextFileToolStripMenuItem.Enabled = false;
             logToBinaryFileToolStripMenuItem.Enabled = false;
+            logToTextAtArbitraryIntervalToolStripMenuItem.Enabled = false;
         }
 
         /// <summary>
@@ -521,7 +524,7 @@ namespace QA350
                     spanSec = GraphData.Last().X - GraphData.First().X;
                 }
 
-                if (AppSettings.YAxisIsPPM)
+                if (AppSettings.YAxisSetting == YAxisSettings.Ppm)
                 {
                     zedGraphControl1.GraphPane.Title.Text = string.Format("{0}PPM per div\nMean={1}V Span={2:0}sec", AppSettings.YAxisPPMperDiv, avg.ToEngineeringNotation("0.000"), spanSec);
                     zedGraphControl1.GraphPane.YAxis.Scale.MajorStep = GetYAxisPerDiv(avg);
@@ -593,7 +596,7 @@ namespace QA350
             // This is a ratio of 1.00467. However, emperically we determine that
             // 1.00988 gives better agreement. The correct solution here is to calibrate 
             // for both in a future update.
-            if ( (Hardware.GetMode() == Mode.DC) && (SampleRate == SampleRateEnum.Fast_1KHz) )
+            if ((Hardware.GetMode() == Mode.DC) && (SampleRate == SampleRateEnum.Fast_1KHz))
             {
                 v = v * 1.00988;
             }
@@ -685,25 +688,30 @@ namespace QA350
 
         private double GetBinSize()
         {
-            if (AppSettings.HistoBinIsMV)
-                return AppSettings.HistoBinInMV / 1e3;
-            else if (AppSettings.HistoBinIsUV)
-                return AppSettings.HistoBinInUV / 1e6;
-            else
-                throw new NotImplementedException("Exception in GetBinSize()");
+            switch (AppSettings.HistoBinSetting)
+            {
+                case HistoBinSettings.Mv:
+                    return AppSettings.HistoBinInMV / 1e3;
+                case HistoBinSettings.Uv:
+                    return AppSettings.HistoBinInUV / 1e6;
+                default:
+                    throw new NotImplementedException("Exception in GetBinSize()");
+            }
         }
 
         private double GetYAxisPerDiv(double avg)
         {
-
-            if (AppSettings.YAxisIsMV)
-                return AppSettings.YAxisMVperDiv / 1e3;
-            else if (AppSettings.YAxisIsUV)
-                return AppSettings.YAxisUVPerDiv / 1e6;
-            else if (AppSettings.YAxisIsPPM)
-                return AppSettings.YAxisPPMperDiv * avg / 1e6;
-            else
-                throw new NotImplementedException("Exception in GetYAxisPerDiv()");
+            switch (AppSettings.YAxisSetting)
+            {
+                case YAxisSettings.Ppm:
+                    return AppSettings.YAxisPPMperDiv * avg / 1e6;
+                case YAxisSettings.Mv:
+                    return AppSettings.YAxisMVperDiv / 1e3;
+                case YAxisSettings.Uv:
+                    return AppSettings.YAxisUVPerDiv / 1e6;
+                default:
+                    throw new NotImplementedException("Exception in GetYAxisPerDiv()");
+            }
         }
 
         /// <summary>
@@ -755,7 +763,7 @@ namespace QA350
             if (MessageBox.Show("You are about to reflash the firmware. If you proceed, it will take 3-4 minutes wihtout any updates until the end. Proceed?", "Important!", MessageBoxButtons.OKCancel) != DialogResult.OK)
             {
                 LEDKickerTimer.Enabled = true;
-                AcqTimer.Enabled = true; 
+                AcqTimer.Enabled = true;
                 return;
             }
 
@@ -787,25 +795,7 @@ namespace QA350
         /// <param name="e"></param>
         private void loggingToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            bool isBinary = false;
-
             ToolStripMenuItem mi = (ToolStripMenuItem)sender;
-            ToolStripMenuItem otherMi = null;
-            if (mi == logToBinaryFileToolStripMenuItem)
-            {
-                isBinary = true;
-                otherMi = logToTextFileToolStripMenuItem;
-            }
-            else if (mi == logToTextFileToolStripMenuItem)
-            {
-                isBinary = false;
-                otherMi = logToBinaryFileToolStripMenuItem;
-            }
-            else
-            {
-                throw new NotImplementedException("Unknown menu type in loggingToolStripMenuItem_Click");
-            }
-
             if (mi.Checked == false)
             {
                 SaveFileDialog sfd = new SaveFileDialog();
@@ -815,7 +805,6 @@ namespace QA350
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
                     mi.Checked = true;
-                    otherMi.Enabled = false;
                     LoggingEnabled = true;
                     LogFile = sfd.FileName;
 
@@ -828,16 +817,31 @@ namespace QA350
                         SampleRate = SampleRateEnum.Fast_1KHz;
                     }
 
-                    if (isBinary)
-                        new Thread(LoggingThreadBinary).Start();
-                    else
-                        new Thread(LoggingThreadText).Start();
+                    if (mi == logToBinaryFileToolStripMenuItem)
+                    {
+                        logToTextFileToolStripMenuItem.Enabled = false;
+                        logToTextAtArbitraryIntervalToolStripMenuItem.Enabled = false;
+                        new Task(LoggingThreadBinary).Start();
+                    }
+                    else if (mi == logToTextFileToolStripMenuItem)
+                    {
+                        logToBinaryFileToolStripMenuItem.Enabled = false;
+                        logToTextAtArbitraryIntervalToolStripMenuItem.Enabled = false;
+                        new Task(LoggingThreadText).Start();
+                    }
+                    else if (mi == logToTextAtArbitraryIntervalToolStripMenuItem)
+                    {
+                        logToBinaryFileToolStripMenuItem.Enabled = false;
+                        logToTextFileToolStripMenuItem.Enabled = false;
+                        new Task(LoggingThreadTextArbitraryInterval).Start();
+                    }
 
                     // While logging, the logging speed cannot be changed and the DC/RMS setting cannot be changed
                     DcModeBtn.Enabled = false;
                     RmsModeBtn.Enabled = false;
                     SlowUpdateBtn.Enabled = false;
                     FastUpdateBtn.Enabled = false;
+                    SetRelBtn.Enabled = false;
                 }
             }
             else
@@ -866,7 +870,7 @@ namespace QA350
             try
             {
                 dt = (float)(1.0 / GetSampleRate());
-                
+
                 fs = new FileStream(LogFile, FileMode.Create, FileAccess.Write);
                 sw = new BinaryWriter(fs);
 
@@ -879,7 +883,7 @@ namespace QA350
                     StreamSample[] buffer = new StreamSample[0];
                     try
                     {
-                        while ( (Hardware.GetFifoDepth() < 12) && (LoggingEnabled) )
+                        while ((Hardware.GetFifoDepth() < 12) && (LoggingEnabled))
                         {
                             Thread.Sleep(5);
                         }
@@ -907,7 +911,7 @@ namespace QA350
                     }
 
                     // If we're missing a block of data, write null samples to indicate such. 
-                    while ( (byte)(LastSequence + 1) != buffer[0].SequenceId)
+                    while ((byte)(LastSequence + 1) != buffer[0].SequenceId)
                     {
                         //sw.Write(sample++ * dt);
                         sw.Write(float.NaN);
@@ -928,7 +932,7 @@ namespace QA350
             {
                 MessageBox.Show("Binary logging has stopped: " + ex.Message);
             }
-        
+
             if (sw != null)
             {
                 sw.Flush();
@@ -972,7 +976,7 @@ namespace QA350
                     StreamSample[] buffer = new StreamSample[0];
                     try
                     {
-                        while ( (Hardware.GetFifoDepth() < 12) && (LoggingEnabled) )
+                        while ((Hardware.GetFifoDepth() < 12) && (LoggingEnabled))
                         {
                             Thread.Sleep(5);
                         }
@@ -1011,9 +1015,71 @@ namespace QA350
                     {
                         bool ovf = false;
                         sw.WriteLine("{0:0.000},{1:N6}", sample++ * dt, ConvertCountsToVoltage(buffer[i].Value, ref ovf));
-                        //sw.Write(sample++ * dt);
-                        //tw.Write((float)ConvertCountsToVoltage(buffer[i].Value, ref ovf));
                         LastSequence = buffer[i].SequenceId;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Text logging has stopped: " + ex.Message);
+            }
+
+            if (sw != null)
+            {
+                sw.Flush();
+                sw.Close();
+            }
+
+            LoggingEnabled = false;
+            Debug.WriteLine("Text logging thread exited. {0} samples written.", sample);
+            LoggingDone();
+        }
+
+        private void LoggingThreadTextArbitraryInterval()
+        {
+            float dt;
+            int sample = 0;
+
+            Debug.WriteLine("Text logging thread w/Arbitrary Interval started");
+
+            StreamWriter sw = null;
+
+            DlgEntry dlg = new DlgEntry(AppSettings.LoggingIntervalSec);
+
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                AppSettings.LoggingIntervalSec = Convert.ToInt32(dlg.numericUpDown1.Value);
+            }
+            else
+            {
+                return;
+            }
+
+            try
+            {
+                dt = (float)(1.0 / GetSampleRate());
+
+                sw = new StreamWriter(LogFile);
+
+                // File header
+                DateTime startTime = DateTime.Now;
+                sw.WriteLine("Logging file Created on " + startTime.ToShortDateString() + " " + startTime.ToShortTimeString());
+                sw.WriteLine("Sample Rate {0} sps", GetSampleRate());
+                sw.WriteLine("System Time, dT (seconds), Value");
+
+                while (LoggingEnabled)
+                {
+                    DateTime now = DateTime.Now;
+                    string s = string.Format(CultureInfo.InvariantCulture, "{0} {1}, {2:0.00}, {3:N6}", now.ToShortDateString(), now.ToLongTimeString(), now.Subtract(startTime).TotalSeconds, LastReading);
+                    sw.WriteLine(s);
+                    sw.Flush();
+
+                    // Sleep 250 mS at a time
+                    for (int i = 0; i < AppSettings.LoggingIntervalSec * 4; i++)
+                    {
+                        Thread.Sleep(250);
+                        if (LoggingEnabled == false)
+                            break;
                     }
                 }
             }
@@ -1035,16 +1101,19 @@ namespace QA350
 
         private void LoggingDone()
         {
-            Invoke((MethodInvoker)delegate 
+            Invoke((MethodInvoker)delegate
             {
                 DcModeBtn.Enabled = true;
                 RmsModeBtn.Enabled = true;
                 SlowUpdateBtn.Enabled = true;
                 FastUpdateBtn.Enabled = true;
+                SetRelBtn.Enabled = true;
                 logToBinaryFileToolStripMenuItem.Enabled = true;
                 logToBinaryFileToolStripMenuItem.Checked = false;
                 logToTextFileToolStripMenuItem.Enabled = true;
                 logToTextFileToolStripMenuItem.Checked = false;
+                logToTextAtArbitraryIntervalToolStripMenuItem.Enabled = true;
+                logToTextAtArbitraryIntervalToolStripMenuItem.Checked = false;
             });
         }
 
@@ -1117,7 +1186,7 @@ namespace QA350
 
         private void button1_Click(object sender, EventArgs e)
         {
-           
+
         }
 
         // RMS Button

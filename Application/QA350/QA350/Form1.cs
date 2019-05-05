@@ -55,7 +55,7 @@ namespace QA350
         /// <summary>
         /// Holds the data that is graphed in the left hand graph (v versus t)
         /// </summary>
-        PointPairList GraphData = new PointPairList();
+        PointPairList GraphData = new PointPairList(); 
         DateTime StartTime;
 
         [System.Runtime.InteropServices.DllImport("gdi32.dll")]

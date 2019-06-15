@@ -1,4 +1,9 @@
-﻿1.75 (May 2018)
+﻿1.76 (May 2019)
+- Added QA350 CPU temp display in status bar and logging. Temp accuracy will bounce around +/- 1 degree
+- Firmware version must match release, otherwise a reminder is shown at launch
+- This requires FW release 12
+
+1.75 (May 2019)
 - Fixed bug where axis settings wasn't persisting correctly
 - Added ability to log at arbitrary intervals. This was for user DM, who needs the ability to log for days at a time
 - There is an offset present when switching between fast and slow modes, and the cause hasn't yet been determined.

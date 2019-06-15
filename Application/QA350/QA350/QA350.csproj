@@ -158,8 +158,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy  /Y "$(SolutionDir)MSP430 Workspace\QA350\Debug\QA350.txt"  "$(TargetDir)\QA350.boot"
-copy  /Y "$(SolutionDir)MSP430 Workspace\QA351\Debug\QA351.txt"  "$(TargetDir)\QA351.boot"</PostBuildEvent>
+    <PostBuildEvent>copy  /Y "$(SolutionDir)MSP430 Workspace\QA350\Debug\QA350.txt"  "$(TargetDir)\QA350.boot"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

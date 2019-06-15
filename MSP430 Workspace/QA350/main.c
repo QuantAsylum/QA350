@@ -84,6 +84,7 @@ int64_t  RmsAccum;
 uint16_t RmsSample;
 uint8_t  RmsBusy;
 
+volatile uint16_t LastAdcReading;
 
 // Forward Declarations
 uint32_t GetSysTime();
@@ -94,7 +95,6 @@ void SetADS1256SampleRate(uint8_t);
 void ResetQA350();
 
 // Global flags set by events
-//volatile uint8_t bCommandBeingProcessed = FALSE;
 volatile uint8_t bDataReceiveCompleted_event = FALSE;  // data receive completed event
 volatile uint8_t bSampleReady_event = FALSE;
 
@@ -253,6 +253,54 @@ void InitSPI()
 	//param.spiMode = USCI_A_SPI_3PIN;
 	USCI_A_SPI_initMaster(SPI, &param);
 	USCI_A_SPI_enable(SPI);
+}
+
+void InitAdc()
+{
+    // Use internal ADC clock
+    ADC12_A_init(ADC, ADC12_A_SAMPLEHOLDSOURCE_SC, ADC12_A_CLOCKSOURCE_ADC12OSC, ADC12_A_CLOCKDIVIDER_1);
+    ADC12_A_enable(ADC);
+
+    // Set ADC sample rate to about 18 KHz = 55uS
+    ADC12_A_setupSamplingTimer(ADC, ADC12_A_CYCLEHOLD_256_CYCLES, ADC12_A_CYCLEHOLD_256_CYCLES, ADC12_A_MULTIPLESAMPLESENABLE);
+
+    ADC12_A_configureMemoryParam param = {0};
+	param.memoryBufferControlIndex = ADC12_A_MEMORY_0;
+	param.inputSourceSelect = ADC12_A_INPUT_TEMPSENSOR;
+	param.positiveRefVoltageSourceSelect = ADC12_A_VREFPOS_INT;
+	param.negativeRefVoltageSourceSelect = ADC12_A_VREFNEG_AVSS;
+	param.endOfSequence = ADC12_A_NOTENDOFSEQUENCE;
+	ADC12_A_configureMemory(ADC, &param);
+
+	while ( REF_ACTIVE == Ref_isRefGenBusy(REF) ) ;
+
+    Ref_setReferenceVoltage(REF, REF_VREF1_5V);
+    Ref_enableReferenceVoltage(REF);
+
+    // Wait for ref to settle
+    __delay_cycles(75);
+
+	ADC12_A_clearInterrupt(ADC, ADC12IFG0);
+    ADC12_A_enableInterrupt(ADC, ADC12IE0);
+
+    ADC12_A_startConversion(ADC, ADC12_A_MEMORY_0, ADC12_A_REPEATED_SINGLECHANNEL);
+}
+
+int16_t AdcGetTemp()
+{
+	int32_t raw;
+
+	__disable_interrupt();
+	raw = (uint16_t)LastAdcReading;
+	__enable_interrupt();
+
+	int32_t calAdcT30 = *(uint16_t*)(0x01A1A); // ADC 1.5V reference at 30C
+	int32_t calAdcT85 = *(uint16_t*)(0x01A1C); // ADC 1.5V reference at 85C
+
+	// See 1.13.5.3 in users manual. This will return temp * 10 (eg 25.3 degrees = 253)
+	int32_t result = (raw - calAdcT30) * 550 / (calAdcT85 - calAdcT30) + 300;
+
+	return result;
 }
 
 //
@@ -568,6 +616,7 @@ void main (void)
 
     InitSPI();
     InitTimerA();
+    InitAdc();
 
     // At this point, interrupts must be enabled as the
     // routines immediately following rely on them for timing
@@ -857,10 +906,10 @@ void ProcessUsbData()
 
 			if (RmsBusy)
 			{
-				UsbBuffer[0] = INVALID_RESULT >> 24;
-				UsbBuffer[1] = INVALID_RESULT >> 16;
-				UsbBuffer[2] = INVALID_RESULT >> 8;
-				UsbBuffer[3] = INVALID_RESULT >> 0;
+				UsbBuffer[0] = (uint8_t)(INVALID_RESULT >> 24);
+				UsbBuffer[1] = (uint8_t)(INVALID_RESULT >> 16);
+				UsbBuffer[2] = (uint8_t)(INVALID_RESULT >> 8);
+				UsbBuffer[3] = (uint8_t)(INVALID_RESULT >> 0);
 			}
 			else
 			{
@@ -874,6 +923,30 @@ void ProcessUsbData()
 				UsbBuffer[2] = result >> 8;
 				UsbBuffer[3] = result >> 0;
 			}
+
+			if (hidSendDataInBackground( UsbBuffer, USB_BUF_LEN, HID0_INTFNUM,0))
+			{
+				// Operation may still be open; cancel it if the
+				// send fails, escape the main loop
+				USBHID_abortSend(&x,HID0_INTFNUM);
+				break;
+			}
+			else
+			{
+				// Send was successful
+
+			}
+			break;
+
+		case 51: // Read temp sensor inside MSP430
+			__disable_interrupt();
+			data = (uint32_t)AdcGetTemp();
+			__enable_interrupt();
+
+			UsbBuffer[0] = data >> 24;
+			UsbBuffer[1] = data >> 16;
+			UsbBuffer[2] = data >> 8;
+			UsbBuffer[3] = data >> 0;
 
 			if (hidSendDataInBackground( UsbBuffer, USB_BUF_LEN, HID0_INTFNUM,0))
 			{
@@ -918,7 +991,7 @@ void ProcessUsbData()
 
 		case 254:
 			// Read software version
-			data = 11;
+			data = 12;
 			UsbBuffer[0] = data >> 24;
 			UsbBuffer[1] = data >> 16;
 			UsbBuffer[2] = data >> 8;
@@ -967,45 +1040,22 @@ void ResetQA350()
 //
 // ISR Code
 //
+
+#pragma vector=ADC12_VECTOR
+__interrupt void ADC12ISR (void)
+{
+	P3OUT |= BIT3;
+	LastAdcReading = ADC12_A_getResults(ADC12_A_BASE, ADC12_A_MEMORY_0);
+	P3OUT &= ~BIT3;
+}
+
 #pragma vector=PORT2_VECTOR
-__interrupt void Port_5(void)
+__interrupt void Port_2(void)
 {
 	bSampleReady_event = TRUE;
-	/*
-	// BUGBUG: Get rid of volatile. This is to help with debug only and will
-	// impact optimization
-	volatile int32_t data = ReadADS1256Data();
-
-	if (Mode == MODE_DC)
-	{
-		FifoPush(data);
-	}
-	else if (Mode == MODE_RMS)
-	{
-		if (RmsSample < RMS_SAMPLES)
-		{
-			++RmsSample;
-
-			data = data >> 4;
-
-			RmsAccum += ((int64_t)data * (int64_t)data);
-		}
-		else
-		{
-			// Done
-			RmsBusy = false;
-		}
-	}
-	else
-	{
-		// Unknown mode
-		while (1);
-	}
-	*/
 
 	GPIO_clearInterruptFlag(GPIO_PORT_P2, GPIO_PIN5);
 	__bic_SR_register_on_exit(CPUOFF);
-
 }
 
 
@@ -1054,14 +1104,8 @@ __interrupt void Timer0_A0 (void)
 /*  
  * ======== UNMI_ISR ========
  */
-#if defined(__TI_COMPILER_VERSION__) || (__IAR_SYSTEMS_ICC__)
 #pragma vector = UNMI_VECTOR
 __interrupt void UNMI_ISR (void)
-#elif defined(__GNUC__) && (__MSP430__)
-void __attribute__ ((interrupt(UNMI_VECTOR))) UNMI_ISR (void)
-#else
-#error Compiler not found!
-#endif
 {
     switch (__even_in_range(SYSUNIV, SYSUNIV_BUSIFG ))
     {
@@ -1140,4 +1184,4 @@ uint32_t GetSysTime()
 	return time;
 }
 
-//Released_Version_4_20_00
+

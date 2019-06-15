@@ -132,6 +132,11 @@ namespace QA350
             return SendRecv(0xFE);
         }
 
+        static public int GetMspTemp()
+        {
+            return SendRecv(51);
+        }
+
         /// <summary>
         /// Reads the voltage counts at the inputs indicated by the last SetAtten() call. These are raw
         /// reads, no corrections are applied. 

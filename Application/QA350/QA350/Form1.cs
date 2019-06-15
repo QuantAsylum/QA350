@@ -54,6 +54,11 @@ namespace QA350
         int FactoryModeKeyIndex = 0;
 
         /// <summary>
+        /// Last requested temperature of the MSP430 processor inside the QA350
+        /// </summary>
+        int MspTemperature;
+
+        /// <summary>
         /// Holds the data that is graphed in the left hand graph (v versus t)
         /// </summary>
         PointPairList GraphData = new PointPairList();
@@ -91,6 +96,9 @@ namespace QA350
 #if !DEBUG
             flashVirginDeviceToolStripMenuItem.Visible = false;
 #endif
+            statusStrip1.Items.Add("Test1");
+            statusStrip1.Items.Add("Test2");
+
             if (File.Exists(Constants.SettingsFile))
             {
                 // There's a settings file here. See if we can load it
@@ -156,6 +164,20 @@ namespace QA350
 
             LEDKickerTimer.Enabled = true;
             TryConnect();
+
+            SetTempStatus(int.MaxValue);
+        }
+
+        void SetUsbStatus(string s)
+        {
+            statusStrip1.Items[0].Text = s;
+        }
+
+        void SetTempStatus(int counts)
+        {
+
+            string s = string.Format("Temp: {0}C", (counts == int.MaxValue ? "??" : (counts / 10.0).ToString("0")));
+            statusStrip1.Items[1].Text = s;
         }
 
         /// <summary>
@@ -277,12 +299,12 @@ namespace QA350
             {
                 Int32 fwVersion = Hardware.GetFirmwareVersion();
 
-                if (fwVersion < Constants.RequiredFwVersion)
+                if (fwVersion != Constants.RequiredFwVersion)
                 {
                     MessageBox.Show("The device firware needs to be updated. Please use the 'Tools->Update QA350 Flash' menu option.");
                 }
 
-                toolStripStatusLabel1.Text = string.Format("Opened. (FW version = {0})", fwVersion.ToString());
+                SetUsbStatus(string.Format("Opened. (FW version = {0})", fwVersion.ToString()));
                 logToTextFileToolStripMenuItem.Enabled = true;
                 logToBinaryFileToolStripMenuItem.Enabled = true;
                 logToTextAtArbitraryIntervalToolStripMenuItem.Enabled = true;
@@ -297,7 +319,7 @@ namespace QA350
             }
             else
             {
-                toolStripStatusLabel1.Text = "Open failed...please plug in QA350";
+                SetUsbStatus("Open failed...please plug in QA350");
                 AcqTimer.Enabled = false;
             }
         }
@@ -311,7 +333,7 @@ namespace QA350
             Hardware.IsConnected = false;
             AcqTimer.Enabled = false;
             label3.Text = "--CONNECTING--";
-            toolStripStatusLabel1.Text = "Disconnected...please plug in QA350";
+            SetUsbStatus("Disconnected...please plug in QA351");
             logToTextFileToolStripMenuItem.Enabled = false;
             logToBinaryFileToolStripMenuItem.Enabled = false;
             logToTextAtArbitraryIntervalToolStripMenuItem.Enabled = false;
@@ -348,6 +370,8 @@ namespace QA350
             if (Hardware.IsConnected)
             {
                 Hardware.KickLED();
+                MspTemperature = Hardware.GetMspTemp();
+                SetTempStatus(MspTemperature);
             }
             else
             {
@@ -740,7 +764,7 @@ namespace QA350
         {
             Invoke((System.Windows.Forms.MethodInvoker)delegate
             {
-                toolStripStatusLabel1.Text = status;
+                SetUsbStatus(status);
                 statusStrip1.Update();
             });
         }
@@ -758,7 +782,7 @@ namespace QA350
             // Bugbug: From here on out, redirect all console output to a listbox
             AcqTimer.Enabled = false;
             LEDKickerTimer.Enabled = false;
-            toolStripStatusLabel1.Text = "Reflashing...";
+            SetUsbStatus("Reflashing...");
 
             if (MessageBox.Show("You are about to reflash the firmware. If you proceed, it will take 3-4 minutes wihtout any updates until the end. Proceed?", "Important!", MessageBoxButtons.OKCancel) != DialogResult.OK)
             {
@@ -1057,20 +1081,24 @@ namespace QA350
 
             try
             {
-                dt = (float)(1.0 / GetSampleRate());
-
                 sw = new StreamWriter(LogFile);
 
                 // File header
                 DateTime startTime = DateTime.Now;
-                sw.WriteLine("Logging file Created on " + startTime.ToShortDateString() + " " + startTime.ToShortTimeString());
-                sw.WriteLine("Sample Rate {0} sps", GetSampleRate());
-                sw.WriteLine("System Time, dT (seconds), Value");
+                sw.WriteLine("#QA350 Data Log");
+                sw.WriteLine("#Logging file Created on " + startTime.ToShortDateString() + " " + startTime.ToShortTimeString());
+                sw.WriteLine("#Logging Interval: {0} seconds", AppSettings.LoggingIntervalSec);
+                sw.WriteLine("#Calibrated: " + !CalData.IsDefault);
+                sw.WriteLine("#System Time, time since start (seconds), Value (volts), QA350 temperature (C)");
+
 
                 while (LoggingEnabled)
                 {
                     DateTime now = DateTime.Now;
-                    string s = string.Format(CultureInfo.InvariantCulture, "{0} {1}, {2:0.00}, {3:N6}", now.ToShortDateString(), now.ToLongTimeString(), now.Subtract(startTime).TotalSeconds, LastReading);
+                    string s = string.Format(CultureInfo.InvariantCulture, "{0} {1}, {2:0.00}, {3:N6}, {4:0}", 
+                        now.ToShortDateString(), now.ToLongTimeString(), now.Subtract(startTime).TotalSeconds, 
+                        LastReading, MspTemperature/10.0);
+
                     sw.WriteLine(s);
                     sw.Flush();
 

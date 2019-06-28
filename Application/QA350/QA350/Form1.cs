@@ -64,6 +64,9 @@ namespace QA350
         PointPairList GraphData = new PointPairList();
         DateTime StartTime;
 
+
+        bool BadFirmwareVersion = false;
+
         [System.Runtime.InteropServices.DllImport("gdi32.dll")]
         private static extern IntPtr AddFontMemResourceEx(IntPtr pbFont, uint cbFont,
             IntPtr pdv, [System.Runtime.InteropServices.In] ref uint pcFonts);
@@ -96,8 +99,8 @@ namespace QA350
 #if !DEBUG
             flashVirginDeviceToolStripMenuItem.Visible = false;
 #endif
-            statusStrip1.Items.Add("Test1");
-            statusStrip1.Items.Add("Test2");
+            statusStrip1.Items.Add("");
+            statusStrip1.Items.Add("");
 
             if (File.Exists(Constants.SettingsFile))
             {
@@ -298,10 +301,12 @@ namespace QA350
             if (Hardware.Open())
             {
                 Int32 fwVersion = Hardware.GetFirmwareVersion();
-
+                 
                 if (fwVersion != Constants.RequiredFwVersion)
                 {
-                    MessageBox.Show("The device firware needs to be updated. Please use the 'Tools->Update QA350 Flash' menu option.");
+                    BadFirmwareVersion = true;
+                    MessageBox.Show($"Firmware version: {fwVersion}. The device firware needs to be updated. Please use the 'Tools->Update QA350 Flash' menu option.");
+                    return;
                 }
 
                 SetUsbStatus(string.Format("Opened. (FW version = {0})", fwVersion.ToString()));
@@ -367,6 +372,9 @@ namespace QA350
         /// <param name="e"></param>
         private void timer1_Tick(object sender, EventArgs e)
         {
+            if (BadFirmwareVersion)
+                return;
+
             if (Hardware.IsConnected)
             {
                 Hardware.KickLED();
@@ -427,6 +435,9 @@ namespace QA350
         /// <param name="e"></param>
         private void AckTimer_Tick(object sender, EventArgs e)
         {
+            if (BadFirmwareVersion)
+                return;
+
             // Check if we've been unplugged
             try
             {
@@ -659,6 +670,12 @@ namespace QA350
         /// <param name="e"></param>
         private void calibrateToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (BadFirmwareVersion)
+            {
+                MessageBox.Show("The firmware must be updated before calibrating");
+                return;
+            }
+
             SlowUpdateBtn.On = true;
             SlowUpdateBtn_ButtonPressed(null, null);
 

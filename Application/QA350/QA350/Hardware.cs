@@ -34,7 +34,7 @@ namespace QA350
         /// </summary>
         static HidDevice Msp430;
 
-        static int timeout = 50;
+        static int Timeout = 50;
 
         static public bool IsConnected = false;
 
@@ -52,7 +52,7 @@ namespace QA350
             // See if we can see the USB ID of this product
             Msp430 = HidDevices.Enumerate(0x2047, 0x0301).FirstOrDefault();
 
-            timeout = 50;
+            Timeout = 50;
 
             if (Msp430 != null)
             {
@@ -74,18 +74,27 @@ namespace QA350
         /// that the product ID differs when in bootloader mode
         /// </summary>
         /// <returns></returns>
-        static public bool OpenBSL()
+        static public bool OpenBSL(int secondsToTry = 15)
         {
-            // See if we can see the USB ID of this product
-            Msp430 = HidDevices.Enumerate(0x2047, 0x200).FirstOrDefault();
-            timeout = 8000;
+            DateTime start = DateTime.Now;
 
-            if (Msp430 != null)
+            while (DateTime.Now.Subtract(start).TotalSeconds < secondsToTry)
             {
-                // Device ID is connected. Open it.
-                Msp430.OpenDevice();
-                IsConnected = true;
-                return true;
+                // See if we can see the USB ID of this product
+                Msp430 = HidDevices.Enumerate(0x2047, 0x200).FirstOrDefault();
+                Timeout = 8000;
+
+                if (Msp430 != null)
+                {
+                    // Device ID is connected. Open it.
+                    Msp430.OpenDevice();
+                    IsConnected = true;
+                    Thread.Sleep(1000);
+                    return true;
+                }
+
+                Thread.Sleep(1000);
+                Debug.WriteLine("Looping in OpenBsl");
             }
 
             // Device ID wasn't connected. No need to try and open
@@ -347,7 +356,7 @@ namespace QA350
            
             Array.Copy(data, 0, frame, 2, data.Length);
 
-            bool retVal = Msp430.FastWrite(frame, timeout);
+            bool retVal = Msp430.FastWrite(frame, Timeout);
             return retVal;
 
         }
@@ -368,7 +377,7 @@ namespace QA350
         {
             buffer = new byte[0];
 
-            HidDeviceData hdd = Msp430.FastRead(timeout);   
+            HidDeviceData hdd = Msp430.FastRead(Timeout);   
 
             if (hdd != null)
             {

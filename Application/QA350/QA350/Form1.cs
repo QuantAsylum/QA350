@@ -784,7 +784,7 @@ namespace QA350
             LEDKickerTimer.Enabled = false;
             SetUsbStatus("Reflashing...");
 
-            if (MessageBox.Show("You are about to reflash the firmware. If you proceed, it will take 3-4 minutes wihtout any updates until the end. Proceed?", "Important!", MessageBoxButtons.OKCancel) != DialogResult.OK)
+            if (MessageBox.Show("You are about to reflash the firmware. If you proceed, it will take 3-4 minutes without any updates until the end. Proceed?", "Important!", MessageBoxButtons.OKCancel) != DialogResult.OK)
             {
                 LEDKickerTimer.Enabled = true;
                 AcqTimer.Enabled = true;
@@ -793,8 +793,6 @@ namespace QA350
 
             AcqTimer.Enabled = false;
             LEDKickerTimer.Enabled = false;
-            Hardware.EnterBSL();
-            Thread.Sleep(2000);
             Bootloader.EnterBootloader(FlashStatusUpdate);
 
             MessageBox.Show("Restart the application and replug the hardware");
@@ -810,6 +808,8 @@ namespace QA350
         private void flashVirginDeviceToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Bootloader.EnterBootloader(FlashStatusUpdate);
+            MessageBox.Show("Restart the application and replug the hardware");
+            Close();
         }
 
         /// <summary>

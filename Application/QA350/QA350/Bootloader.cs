@@ -70,9 +70,9 @@ namespace QA350
             }
 
             // Tell the device to enter BSL if we're already connected
-            if (Hardware.IsConnected && Hardware.USBSendData(new byte[] { 0xFF, 0x00 }))
+            if (Hardware.IsConnected)
             {
-                Thread.Sleep(4000);
+                Hardware.EnterBSL();
             }
 
             // Now reconnect with BL. Do not enter this section of code if 
@@ -81,7 +81,6 @@ namespace QA350
             try
             {
                 Hardware.OpenBSL();
-                Thread.Sleep(1000);
 
                 SubmitPassword();  // This might fail and perform mass erase
                 SubmitPassword();  // This will always succeed and perform mass erase
@@ -93,9 +92,8 @@ namespace QA350
 
                 // Run ram-based BSL
                 SetPC(0x2504);
-                Thread.Sleep(4000);
-                Hardware.OpenBSL();
                 Thread.Sleep(1000);
+                Hardware.OpenBSL();
                 Debug.WriteLine("BSL Version: " + GetBSLVersion().ToString("X"));
 
                 // Erase everything

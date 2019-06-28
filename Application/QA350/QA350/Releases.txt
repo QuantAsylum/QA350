@@ -1,4 +1,7 @@
-﻿1.76 (May 2019)
+﻿1.77 (June 2019)
+- Increased USB timeout period
+
+1.76 (May 2019)
 - Added QA350 CPU temp display in status bar and logging. Temp accuracy will bounce around +/- 1 degree
 - Firmware version must match release, otherwise a reminder is shown at launch
 - This requires FW release 12

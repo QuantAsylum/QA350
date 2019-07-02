@@ -141,6 +141,11 @@ namespace QA350
             return SendRecv(0xFE);
         }
 
+        static public int GetProductId()
+        {
+            return SendRecv(0xFD);
+        }
+
         static public int GetMspTemp()
         {
             return SendRecv(51);

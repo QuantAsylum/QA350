@@ -300,8 +300,15 @@ namespace QA350
             // Attempt to connect to the device upon app startup
             if (Hardware.Open())
             {
+                Int32 productId = Hardware.GetProductId();
+                if (productId != 12345678)
+                {
+                    MessageBox.Show("Unrecognized product.");
+                    Hardware.Close();
+                    return;
+                }
+
                 Int32 fwVersion = Hardware.GetFirmwareVersion();
-                 
                 if (fwVersion != Constants.RequiredFwVersion)
                 {
                     BadFirmwareVersion = true;
